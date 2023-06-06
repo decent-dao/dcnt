@@ -1,11 +1,10 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import { ERC20VotesVestable } from  "./ERC20VotesVestable.sol";
 
 /// @notice the dcnt token
-contract DCNTToken is ERC20Votes, Ownable {
+contract DCNTToken is ERC20VotesVestable {
     uint128 public nextMint; // Timestamp
     uint32 public constant MINIMUM_MINT_INTERVAL = 365 days;
     uint8 public constant MINT_CAP_BPS = 200; // 2%
