@@ -1,10 +1,10 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
-import { ERC20VotesVestable } from  "./ERC20VotesVestable.sol";
+import { ERC20VotesLockable } from  "./ERC20VotesLockable.sol";
 
 /// @notice the dcnt token
-contract DCNTToken is ERC20VotesVestable {
+contract DCNTToken is ERC20VotesLockable {
     uint128 public nextMint; // Timestamp
     uint32 public constant MINIMUM_MINT_INTERVAL = 365 days;
     uint8 public constant MINT_CAP_BPS = 200; // 2%
