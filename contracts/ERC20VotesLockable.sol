@@ -104,10 +104,6 @@ abstract contract ERC20VotesLockable is ERC20Votes, Ownable {
     function _delegate(address _delegator, address _delegatee) internal override {
         super._delegate(_delegator, _delegatee);
 
-        // TODO if Vesting has a single end time, we can probably capture that in
-        // this contract as `uint256 vestEndTime` and avoid calling out to another
-        // contract once vesting is over with via `if (block.timestamp > vestEndTime)`
-
         uint256 lockedBalance = lock.getPending(_delegator);
         if (lockedBalance > 0) {
             // add the locked balance to the new delegatee's voting power
