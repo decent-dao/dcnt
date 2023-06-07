@@ -16,7 +16,7 @@ interface Vesting {
      * @param _beneficiary address to receive vested tokens
      * @return uint256 amount of tokens in the vesting contract for the beneficiary
      */
-    function getTotalTokens(address _beneficiary) external view returns(uint256);
+    function getPending(address _beneficiary) external view returns(uint256);
 }
 
 /**
@@ -69,7 +69,7 @@ abstract contract ERC20VotesVestable is ERC20Votes, Ownable {
 
             // transfer voting power from the vesting contract to the vestee, equal to
             // their token allocation in the contract
-            super._afterTokenTransfer(_vestingAddress, vestee, vest.getTotalTokens(vestee));
+            super._afterTokenTransfer(_vestingAddress, vestee, vest.getPending(vestee));
         }
     }
 
@@ -108,7 +108,7 @@ abstract contract ERC20VotesVestable is ERC20Votes, Ownable {
         // this contract as `uint256 vestEndTime` and avoid calling out to another
         // contract once vesting is over with via `if (block.timestamp > vestEndTime)`
 
-        uint256 vestingBalance = vest.getTotalTokens(_delegator);
+        uint256 vestingBalance = vest.getPending(_delegator);
         if (vestingBalance > 0) {
             // add the vesting balance to the new delegatee's voting power
             super._afterTokenTransfer(_delegator, _delegatee, vestingBalance);

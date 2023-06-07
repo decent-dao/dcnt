@@ -85,6 +85,11 @@ contract LockRelease {
         return _schedules[_beneficiary].released;
     }
 
+    /** Returns the total tokens yet to be released to the beneficiary over the total duration. */
+    function getPending(address _beneficiary) public view returns (uint256) {
+        return _schedules[_beneficiary].total - _schedules[_beneficiary].released;
+    }
+
     /** Returns the total tokens that have matured until now according to the release schedule. */
     function getTotalMatured(address _beneficiary) public view returns (uint256) {
         if (block.timestamp < start) return 0;
