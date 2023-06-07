@@ -15,6 +15,8 @@ contract LockRelease {
     uint128 public start; // start timestamp of the release schedule
     uint128 public duration; // duration of the release schedule in seconds
 
+    address[] public beneficiaries; // list of beneficiaries
+
     /** Represents a release schedule for a specific beneficiary. */
     struct Schedule {
         uint256 total; // total tokens that the beneficiary will receive over the duration
@@ -69,10 +71,17 @@ contract LockRelease {
             schedules[beneficiary] = schedule;
         }
 
+        beneficiaries = _beneficiaries;
+
         // Transfer tokens from sender to contract
         IERC20(token).safeTransferFrom(msg.sender, address(this), total);
 
         emit ScheduleStarted(total, _start, _duration);
+    }
+
+    /** Returns the beneficiaries. */
+    function getBeneficiaries() external view returns (address[]) {
+        return beneficiaries;
     }
 
     /** Returns the total tokens that will be released to the beneficiary over the duration. */

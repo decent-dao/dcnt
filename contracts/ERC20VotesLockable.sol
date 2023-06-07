@@ -17,6 +17,13 @@ interface ILockRelease {
      * @return uint256 amount of tokens in the lock contract for the beneficiary
      */
     function getPending(address _beneficiary) external view returns(uint256);
+
+    /**
+     * Gets the list of beneficiaries in the lock contract.
+     *
+     * @return address[] addresses to receive locked tokens
+     */
+    function getBeneficiaries() external view returns (address[]);
 }
 
 /**
@@ -51,9 +58,8 @@ abstract contract ERC20VotesLockable is ERC20Votes, Ownable {
      * token beneficiaries instead.
      *
      * @param _lockAddress address of the lock contract
-     * @param _beneficiaries list of addresses in the lock contract that are allocated tokens
      */
-    function setUpLockedVotingPower(address _lockAddress, address[] memory _beneficiaries) external onlyOwner {
+    function setUpLockedVotingPower(address _lockAddress) external onlyOwner {
         if (address(lock) != address(0)) revert AlreadyInitialized();
     
         // self delegate the lock contract, establishing its voting power as its balance
@@ -61,8 +67,10 @@ abstract contract ERC20VotesLockable is ERC20Votes, Ownable {
 
         lock = ILockRelease(_lockAddress);
 
-        for (uint i = 0; i < _beneficiaries.length; i++) {
-            address beneficiary = _beneficiaries[i];
+        address[] memory beneficiaries = lock.getBeneficiaries();
+
+        for (uint i = 0; i < beneficiaries.length; i++) {
+            address beneficiary = beneficiaries[i];
 
             // self delegate the beneficiary to allow them to receive voting power
             _delegate(beneficiary, beneficiary);
