@@ -22,7 +22,7 @@ contract LockRelease {
     }
 
     /** Represents a release schedule for a specific beneficiary. */
-    mapping(address => Schedule) private _schedules;
+    mapping(address => Schedule) private schedules;
 
     /** Emitted when a release schedule is created. */
     event ScheduleStarted(uint256 total, uint128 start, uint128 duration);
@@ -63,10 +63,10 @@ contract LockRelease {
 
             address beneficiary = _beneficiaries[i];
             if (beneficiary == address(0)) revert InvalidBeneficiary();
-            if (_schedules[beneficiary].total != 0) revert DuplicateBeneficiary();
+            if (schedules[beneficiary].total != 0) revert DuplicateBeneficiary();
 
             Schedule memory schedule = Schedule(amount, 0);
-            _schedules[beneficiary] = schedule;
+            schedules[beneficiary] = schedule;
         }
 
         // Transfer tokens from sender to contract
@@ -77,24 +77,24 @@ contract LockRelease {
 
     /** Returns the total tokens that will be released to the beneficiary over the duration. */
     function getTotal(address _beneficiary) public view returns (uint256) {
-        return _schedules[_beneficiary].total;
+        return schedules[_beneficiary].total;
     }
 
     /** Returns the total tokens already released to the beneficiary. */
     function getReleased(address _beneficiary) public view returns (uint256) {
-        return _schedules[_beneficiary].released;
+        return schedules[_beneficiary].released;
     }
 
     /** Returns the total tokens yet to be released to the beneficiary over the total duration. */
     function getPending(address _beneficiary) public view returns (uint256) {
-        return _schedules[_beneficiary].total - _schedules[_beneficiary].released;
+        return schedules[_beneficiary].total - schedules[_beneficiary].released;
     }
 
     /** Returns the total tokens that have matured until now according to the release schedule. */
     function getTotalMatured(address _beneficiary) public view returns (uint256) {
         if (block.timestamp < start) return 0;
 
-        Schedule memory schedule = _schedules[_beneficiary];
+        Schedule memory schedule = schedules[_beneficiary];
 
         if (block.timestamp >= start + duration) return schedule.total;
 
@@ -135,7 +135,7 @@ contract LockRelease {
         if (unreleased == 0) revert NothingToRelease();
 
         // Update released amount
-        _schedules[_beneficiary].released = _schedules[_beneficiary].released + _amount;
+        schedules[_beneficiary].released = schedules[_beneficiary].released + _amount;
 
         // Transfer tokens to recipient
         IERC20(token).safeTransfer(_recipient, _amount);
