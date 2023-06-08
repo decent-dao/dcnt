@@ -1,13 +1,14 @@
 //SPDX-License-Identifier: Unlicense
-
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ILockRelease } from "./ILockRelease.sol";
 
 /**
  * This contract allows to create token release schedules and to release those tokens.
  */
-contract LockRelease {
+contract LockRelease is ILockRelease {
 
     using SafeERC20 for IERC20;
 
@@ -32,7 +33,6 @@ contract LockRelease {
     /** Emitted when tokens are released to a recipient. */
     event TokensReleased(
         address indexed beneficiary,
-        address recipient,
         uint256 amount,
         address indexed releasor
     );
@@ -80,23 +80,18 @@ contract LockRelease {
     }
 
     /** Returns the beneficiaries. */
-    function getBeneficiaries() external view returns (address[]) {
+    function getBeneficiaries() external view returns (address[] memory) {
         return beneficiaries;
     }
 
     /** Returns the total tokens that will be released to the beneficiary over the duration. */
-    function getTotal(address _beneficiary) public view returns (uint256) {
+    function getTotal(address _beneficiary) external view returns (uint256) {
         return schedules[_beneficiary].total;
     }
 
     /** Returns the total tokens already released to the beneficiary. */
     function getReleased(address _beneficiary) public view returns (uint256) {
         return schedules[_beneficiary].released;
-    }
-
-    /** Returns the total tokens yet to be released to the beneficiary over the total duration. */
-    function getPending(address _beneficiary) public view returns (uint256) {
-        return schedules[_beneficiary].total - schedules[_beneficiary].released;
     }
 
     /** Returns the total tokens that have matured until now according to the release schedule. */
@@ -115,49 +110,25 @@ contract LockRelease {
         return getTotalMatured(_beneficiary) - getReleased(_beneficiary);
     }
 
-    /** Release tokens to beneficiary. */
-    function release(address _beneficiary, uint256 _amount) public {
-        _release(_beneficiary, _beneficiary, _amount);
+    /** Returns the total tokens yet to be released to the beneficiary over the total duration. */
+    function getPending(address _beneficiary) external view returns (uint256) {
+        return schedules[_beneficiary].total - schedules[_beneficiary].released;
     }
 
-    /** Release all releasable tokens to beneficiary. */
-    function release(address _beneficiary) public {
-        release(_beneficiary, getReleasable(_beneficiary));
-    }
-
-    /** Release tokens to a different recipient. */
-    function releaseTo(address _recipient, uint256 _amount) public {
-        _release(msg.sender, _recipient, _amount);
-    }
-
-    /** Release all releasable tokens to a different recipient. */
-    function releaseTo(address _recipient) public {
-        releaseTo(_recipient, getReleasable(msg.sender));
-    }
-
-    /** Internal function to release tokens according to the release schedule. */
-    function _release(address _beneficiary, address _recipient, uint256 _amount) private {
+    /** Release all releasable tokens to the beneficiary. */
+    function release(address _beneficiary) external {
         
-        uint256 unreleased = getReleasable(_beneficiary);
+        uint256 releasable = getReleasable(_beneficiary);
 
-        if (_amount == 0 || _amount > unreleased) revert InvalidAmount();
-        if (unreleased == 0) revert NothingToRelease();
+        if (releasable == 0) revert NothingToRelease();
 
         // Update released amount
-        schedules[_beneficiary].released = schedules[_beneficiary].released + _amount;
+        schedules[_beneficiary].released = schedules[_beneficiary].released + releasable;
 
         // Transfer tokens to recipient
-        IERC20(token).safeTransfer(_recipient, _amount);
+        IERC20(token).safeTransfer(_beneficiary, releasable);
         
-        emit TokensReleased(_beneficiary, _recipient, _amount, msg.sender);
+        emit TokensReleased(_beneficiary, releasable, msg.sender);
     }
 }
 
-/**
- * Factory contract for creating new LockRelease instances.
- */
-contract LockReleaseFactory {
-    function createLockRelease(address _token, address[] memory _beneficiaries, uint256[] memory _amounts, uint128 _start, uint128 _duration) external {
-        new LockRelease(_token, _beneficiaries, _amounts, _start, _duration);
-    }
-}
