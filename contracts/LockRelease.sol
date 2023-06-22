@@ -12,23 +12,23 @@ import {ILockRelease} from "./ILockRelease.sol";
 contract LockRelease is ILockRelease, Votes {
     using SafeERC20 for IERC20;
 
-    address public token; // address of the token being released
-    uint128 public start; // start timestamp of the release schedule
-    uint128 public duration; // duration of the release schedule in seconds
-
-    address[] public beneficiaries; // list of beneficiaries
-
     /** Represents a release schedule for a specific beneficiary. */
     struct Schedule {
         uint256 total; // total tokens that the beneficiary will receive over the duration
         uint256 released; // already released tokens to the beneficiary
     }
 
+    address public token; // address of the token being released
+    uint128 public start; // start timestamp of the release schedule
+    uint128 public duration; // duration of the release schedule in seconds
+
+    address[] private beneficiaries; // list of beneficiaries
+
     /** Represents a release schedule for a specific beneficiary. */
     mapping(address => Schedule) private schedules;
 
     /** Emitted when a release schedule is created. */
-    event ScheduleStarted(uint256 total, uint128 start, uint128 duration);
+    event ScheduleStarted(address token, address[] beneficiaries, uint256[] amounts, uint128 start, uint128 duration);
 
     /** Emitted when tokens are released to a recipient. */
     event TokensReleased(address indexed beneficiary, uint256 amount);
@@ -50,29 +50,24 @@ contract LockRelease is ILockRelease, Votes {
         uint128 _start,
         uint128 _duration
     ) EIP712("DecentLockRelease", "1.0.0") {
-        if (token == address(0)) revert InvalidToken();
-        if (duration == 0) revert ZeroDuration();
+        if (_token == address(0)) revert InvalidToken();
+        if (_duration == 0) revert ZeroDuration();
         if (_beneficiaries.length != _amounts.length) revert InvalidInputs();
 
         token = _token;
         start = _start;
         duration = _duration;
 
-        uint256 total = 0;
-
-        for (uint16 i = 0; i < _beneficiaries.length; i++) {
+        for (uint16 i = 0; i < _beneficiaries.length; ) {
             uint256 amount = _amounts[i];
             if (amount == 0) revert InvalidAmount();
-
-            total += amount;
 
             address beneficiary = _beneficiaries[i];
             if (beneficiary == address(0)) revert InvalidBeneficiary();
             if (schedules[beneficiary].total != 0)
                 revert DuplicateBeneficiary();
 
-            Schedule memory schedule = Schedule(amount, 0);
-            schedules[beneficiary] = schedule;
+            schedules[beneficiary] = Schedule(amount, 0);
 
             // @todo: Ensure the following lines are correct
             // give the beneficiary voting units
@@ -80,14 +75,15 @@ contract LockRelease is ILockRelease, Votes {
 
             // beneficiary delegates to themselves
             _delegate(beneficiary, beneficiary);
+
+            unchecked {
+                ++i;
+            }
         }
 
         beneficiaries = _beneficiaries;
 
-        // Transfer tokens from sender to contract
-        IERC20(token).safeTransferFrom(msg.sender, address(this), total);
-
-        emit ScheduleStarted(total, _start, _duration);
+        emit ScheduleStarted(_token, _beneficiaries, _amounts, _start, _duration);
     }
 
     /** Returns the beneficiaries. */
