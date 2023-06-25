@@ -1,59 +1,136 @@
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+import {
+  GnosisSafe__factory as GnosisSafeFactory,
+  GnosisSafeProxyFactory__factory as GnosisSafeProxyFactory,
+} from "@fractal-framework/fractal-contracts";
+import {
+  abi as moduleProxyFractoryABI,
+  address as moduleProxyFactoryAddress,
+} from "@fractal-framework/fractal-contracts/deployments/goerli/ModuleProxyFactory.json";
+import { ifaceSafe, predictGnosisSafeAddress } from "./daoFunc/azorius";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
+  const DCNTTokenArtifact = await ethers.getContractFactory("DCNTToken");
+  const LockReleaseArtifact = await ethers.getContractFactory("LockRelease");
 
-  // Mocked ABI and bytecode for the token and other contracts
-  const MockTokenArtifact = await ethers.getContractFactory("MockToken");
-  const LockContractArtifact = await ethers.getContractFactory("LockContract");
-  const FractalDAOArtifact = await ethers.getContractFactory("FractalDAO");
-
-  // 1. Deploy token and mint tokens to deployer address
-  const token = await MockTokenArtifact.deploy();
+  // First deploy DCNTToken and mint tokens to deployer address
+  const initialSupply = ethers.utils.parseEther("10000"); // Supply for Token Generation Event
+  const token = await DCNTTokenArtifact.deploy(initialSupply);
   await token.deployed();
-  console.log(`Token deployed to: ${token.address}`);
+  console.log(`DCNTToken deployed to: ${token.address}`);
 
-  const initialSupply = ethers.utils.parseEther("10000"); // Mocked initial supply
-  await token.mint(deployer.address, initialSupply);
-  console.log(`Minted ${initialSupply} tokens to ${deployer.address}`);
+  const mockedBeneficiaries = [
+    {
+      address: "0xMockBeneficiary1",
+      lockedAmount: ethers.utils.parseEther("1000"),
+    },
+    {
+      address: "0xMockBeneficiary2",
+      lockedAmount: ethers.utils.parseEther("1000"),
+    },
+  ];
 
-  // 2. Deploy lock contract with token address
-  // Mocked locked token beneficiaries and their amounts
-  const beneficiaries = ["0xMockBeneficiary1", "0xMockBeneficiary2"];
-  const amounts = [
-    ethers.utils.parseEther("1000"),
-    ethers.utils.parseEther("1000"),
-  ]; // Mocked amounts for beneficiaries
+  const beneficiaries = mockedBeneficiaries;
 
-  const lockContract = await LockContractArtifact.deploy(
+  // Mocked amounts for beneficiaries
+  const totalLockedAmount = beneficiaries.reduce(
+    (a, b) => a.add(b.lockedAmount),
+    ethers.BigNumber.from(0)
+  );
+
+  // Deploy LockRelease contract with token address, beneficiaries, amounts, start, and duration
+  const beneficiaryAddresses = beneficiaries.map((b) => b.address);
+  const start = Math.floor(Date.now() / 1000);
+  const duration = 60 * 60 * 24 * 365; // 1 year
+
+  const lockRelease = await LockReleaseArtifact.deploy(
     token.address,
-    beneficiaries,
-    amounts
+    beneficiaryAddresses,
+    beneficiaries.map((a) => a.lockedAmount),
+    start,
+    duration
   );
-  await lockContract.deployed();
-  console.log(`Lock Contract deployed to: ${lockContract.address}`);
+  await lockRelease.deployed();
+  console.log(`LockRelease contract deployed to: ${lockRelease.address}`);
 
-  // 3. Deployer funds lock contract with the locked token amounts
-  const totalLockedAmount = amounts.reduce(
-    (a, b) => a.add(b),
-    BigNumber.from(0)
+  // Mint and fund the lock contract with the locked token amounts
+  await token.mint(lockRelease.address, totalLockedAmount);
+  console.log(
+    `Minted and transferred ${totalLockedAmount} tokens to LockRelease contract`
   );
-  await token.transfer(lockContract.address, totalLockedAmount);
-  console.log(`Transferred ${totalLockedAmount} tokens to Lock Contract`);
 
-  // 4. Fractal DAO is deployed with token as the governance token, and the lock contract as the address on the strategy for governance
-  const fractalDAO = await FractalDAOArtifact.deploy(
-    token.address,
-    lockContract.address
+  // Set up initial voting power for locked tokens
+  await token.setUpLockedVotingPower(lockRelease.address);
+  console.log(`Set up locked voting power for ${lockRelease.address}`);
+
+  // Fractal DAO is deployed with token as the governance token, and the lock contract as the address on the strategy for governance
+  // Deployer funds Fractal DAO with remaining tokens (these are unlocked)
+
+  // ! create gnosis safe predicted address
+  // @todo These addresses may need to get updated for mainnet; they are for goerli
+  const gnosisFactoryAddress = "0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2";
+  const gnosisSingletonAddress = "0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552";
+  const saltNum = BigNumber.from(
+    "0x856d90216588f9ffc124d1480a440e1c012c7a816952bc968d737bae5d4e139c"
   );
-  await fractalDAO.deployed();
-  console.log(`Fractal DAO deployed to: ${fractalDAO.address}`);
 
-  // 5. Deployer funds Fractal DAO with remaining tokens
-  const remainingTokens = initialSupply.sub(totalLockedAmount);
-  await token.transfer(fractalDAO.address, remainingTokens);
-  console.log(`Transferred ${remainingTokens} tokens to Fractal DAO`);
+  const gnosisSafeProxyFactory = await ethers.getContractAt(
+    GnosisSafeFactory.abi,
+    gnosisFactoryAddress
+  );
+
+  const moduleProxyFactory = await ethers.getContractAt(
+    moduleProxyFractoryABI,
+    moduleProxyFactoryAddress
+  );
+
+  const createGnosisSetupCalldata = ifaceSafe.encodeFunctionData("setup", [
+    [deployer], // ? @todo is this correct?
+    1,
+    ethers.constants.AddressZero,
+    ethers.constants.HashZero,
+    ethers.constants.AddressZero,
+    ethers.constants.AddressZero,
+    0,
+    ethers.constants.AddressZero,
+  ]);
+
+  const predictedGnosisSafeAddress = await predictGnosisSafeAddress(
+    gnosisSafeProxyFactory.address,
+    createGnosisSetupCalldata,
+    saltNum,
+    gnosisSingletonAddress,
+    gnosisSafeProxyFactory
+  );
+
+  await gnosisSafeProxyFactory.createProxyWithNonce(
+    gnosisSingletonAddress,
+    createGnosisSetupCalldata,
+    saltNum
+  );
+
+  const gnosisSafe = await ethers.getContractAt(
+    GnosisSafeProxyFactory.abi,
+    predictedGnosisSafeAddress
+  );
+
+  // @todo set up strategy data for deployment
+  // @todo set up azorius data for deployment
+
+  // deployment txs
+  // @todo deploy Safe
+  // @todo deploy linear strategy contract
+  // @todo deploy azorius contract
+
+  // tx through new Safe
+  // ?@todo snapshot url?
+  // @todo update daoName
+  // @todo set Azorius strategy
+  // @todo enable Azorius module
+  // @todo add Azorius Contract as owner
+  // ?@todo remove other owners from Safe
 }
 
 main()
