@@ -3,12 +3,29 @@ import { ethers } from "hardhat";
 import {
   GnosisSafe__factory as GnosisSafeFactory,
   GnosisSafeProxyFactory__factory as GnosisSafeProxyFactory,
+  Azorius__factory as AzoriusFactory,
+  LinearERC20Voting__factory as LinearERC20VotingFactory,
 } from "@fractal-framework/fractal-contracts";
 import {
   abi as moduleProxyFractoryABI,
   address as moduleProxyFactoryAddress,
 } from "@fractal-framework/fractal-contracts/deployments/goerli/ModuleProxyFactory.json";
-import { ifaceSafe, predictGnosisSafeAddress } from "./daoFunc/azorius";
+import {
+  abi as azoriusMasterCopyABI,
+  address as azoriusMasterCopyAddress,
+} from "@fractal-framework/fractal-contracts/deployments/goerli/Azorius.json";
+import {
+  abi as linearERC20VotingMasterCopyABI,
+  address as linearERC20VotingMasterCopyAddress,
+} from "@fractal-framework/fractal-contracts/deployments/goerli/LinearERC20Voting.json";
+import {
+  calculateProxyAddress,
+  getRandomBytes,
+  ifaceSafe,
+  predictGnosisSafeAddress,
+} from "./daoFunc/azorius";
+
+const abiCoder = new ethers.utils.AbiCoder();
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -116,8 +133,91 @@ async function main() {
     predictedGnosisSafeAddress
   );
 
-  // @todo set up strategy data for deployment
-  // @todo set up azorius data for deployment
+  const azoriusSalt = getRandomBytes();
+
+  const azoriusMasterCopy = await ethers.getContractAt(
+    azoriusMasterCopyABI,
+    azoriusMasterCopyAddress
+  );
+
+  const azoriusSetupCalldata =
+    // eslint-disable-next-line camelcase
+    AzoriusFactory.createInterface().encodeFunctionData("setUp", [
+      abiCoder.encode(
+        ["address", "address", "address", "address[]", "uint32", "uint32"],
+        [
+          deployer, // ? @todo is this correct? // Gnosis Safe Owner
+          gnosisSafe.address,
+          gnosisSafe.address,
+          [],
+          60, // timelock period in blocks
+          60, // execution period in blocks
+        ]
+      ),
+    ]);
+
+  await moduleProxyFactory.deployModule(
+    azoriusMasterCopyAddress,
+    azoriusSetupCalldata,
+    azoriusSalt
+  );
+
+  const predictedAzoriusAddress = calculateProxyAddress(
+    moduleProxyFactory,
+    azoriusMasterCopyAddress,
+    azoriusSetupCalldata,
+    azoriusSalt
+  );
+
+  const azoriusContract = await ethers.getContractAt(
+    azoriusMasterCopyABI,
+    predictedAzoriusAddress
+  );
+
+  const linearERC20VotingSetupCalldata =
+    // eslint-disable-next-line camelcase
+    LinearERC20VotingFactory.createInterface().encodeFunctionData("setUp", [
+      abiCoder.encode(
+        [
+          "address",
+          "address",
+          "address",
+          "uint32",
+          "uint256",
+          "uint256",
+          "uint256",
+        ],
+        [
+          deployer, // ? @todo is this correct? // Gnosis Safe Owner
+          lockRelease.address, // governance token
+          azoriusContract.address, // Azorius module
+          60, // voting period in blocks
+          300, // proposer weight
+          500000, // quorom numerator, denominator is 1,000,000, so quorum percentage is 50%
+          500000, // basis numerator, denominator is 1,000,000, so basis percentage is 50% (simple majority)
+        ]
+      ),
+    ]);
+
+  const linearERC20Salt = getRandomBytes();
+
+  await moduleProxyFactory.deployModule(
+    linearERC20VotingMasterCopyAddress,
+    linearERC20VotingSetupCalldata,
+    linearERC20Salt
+  );
+
+  const predictedLinearERC20VotingAddress = calculateProxyAddress(
+    moduleProxyFactory,
+    linearERC20VotingMasterCopyAddress,
+    linearERC20VotingSetupCalldata,
+    linearERC20Salt
+  );
+
+  const linearERC20Voting = await ethers.getContractAt(
+    "LinearERC20Voting",
+    predictedLinearERC20VotingAddress
+  );
 
   // deployment txs
   // @todo deploy Safe
