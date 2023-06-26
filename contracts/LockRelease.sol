@@ -70,6 +70,7 @@ contract LockRelease is ILockRelease, Votes {
         token = _token;
         start = _start;
         duration = _duration;
+        beneficiaries = _beneficiaries;
 
         for (uint16 i = 0; i < _beneficiaries.length; ) {
             uint256 amount = _amounts[i];
@@ -92,8 +93,6 @@ contract LockRelease is ILockRelease, Votes {
                 ++i;
             }
         }
-
-        beneficiaries = _beneficiaries;
 
         emit ScheduleStarted(
             _token,
