@@ -78,7 +78,7 @@ contract LockRelease is ILockRelease, Votes {
 
             schedules[beneficiary] = Schedule(amount, 0);
 
-            // give the beneficiary voting units
+            // mint the beneficiary voting units
             _transferVotingUnits(address(0), beneficiary, amount);
 
             // beneficiary delegates to themselves
@@ -114,7 +114,7 @@ contract LockRelease is ILockRelease, Votes {
             schedules[msg.sender].released +
             releasable;
 
-        // Transfer the voting units
+        // Burn the released voting units
         _transferVotingUnits(msg.sender, address(0), releasable);
 
         // Transfer tokens to recipient
