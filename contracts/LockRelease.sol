@@ -1,13 +1,13 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Votes, IERC5805, EIP712} from "@openzeppelin/contracts/governance/utils/Votes.sol";
 import {ILockRelease} from "./ILockRelease.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Votes, IERC5805, EIP712} from "@openzeppelin/contracts/governance/utils/Votes.sol";
 
 /**
- * This contract allows to create token release schedules and to release those tokens.
+ * This contract creates token release schedules to linearly release those tokens over the defined duration.
  */
 contract LockRelease is ILockRelease, Votes {
     using SafeERC20 for IERC20;
@@ -28,21 +28,33 @@ contract LockRelease is ILockRelease, Votes {
     mapping(address => Schedule) private schedules;
 
     /** Emitted when a release schedule is created. */
-    event ScheduleStarted(address token, address[] beneficiaries, uint256[] amounts, uint128 start, uint128 duration);
+    event ScheduleStarted(
+        address token,
+        address[] beneficiaries,
+        uint256[] amounts,
+        uint128 start,
+        uint128 duration
+    );
 
     /** Emitted when tokens are released to a recipient. */
     event TokensReleased(address indexed beneficiary, uint256 amount);
 
-    error InvalidInputs();
+    error InvalidArrayLengths();
     error ZeroDuration();
     error InvalidBeneficiary();
     error InvalidToken();
     error InvalidAmount();
     error DuplicateBeneficiary();
     error NothingToRelease();
-    error FutureLookup();
 
-    // @todo: Ensure that the hardcoded EIP712 constructor args are what we want/need
+    /** Deploys the LockRelease contract and sets up all beneficiary release schedules.
+     *
+     * @param _token address of the beneficiary
+     * @param _beneficiaries array of beneficiary addresses to create release schedules for
+     * @param _amounts array of the amount of tokens to be locked and released for each beneficiary
+     * @param _start the timestamp that the release schedule begins releasing tokens at
+     * @param _duration the time period in seconds that tokens are released over
+     */
     constructor(
         address _token,
         address[] memory _beneficiaries,
@@ -52,11 +64,8 @@ contract LockRelease is ILockRelease, Votes {
     ) EIP712("DecentLockRelease", "1.0.0") {
         if (_token == address(0)) revert InvalidToken();
         if (_duration == 0) revert ZeroDuration();
-        if (_beneficiaries.length != _amounts.length) revert InvalidInputs();
-
-        token = _token;
-        start = _start;
-        duration = _duration;
+        if (_beneficiaries.length != _amounts.length)
+            revert InvalidArrayLengths();
 
         for (uint16 i = 0; i < _beneficiaries.length; ) {
             uint256 amount = _amounts[i];
@@ -69,8 +78,7 @@ contract LockRelease is ILockRelease, Votes {
 
             schedules[beneficiary] = Schedule(amount, 0);
 
-            // @todo: Ensure the following lines are correct
-            // give the beneficiary voting units
+            // mint the beneficiary voting units
             _transferVotingUnits(address(0), beneficiary, amount);
 
             // beneficiary delegates to themselves
@@ -81,47 +89,18 @@ contract LockRelease is ILockRelease, Votes {
             }
         }
 
+        token = _token;
+        start = _start;
+        duration = _duration;
         beneficiaries = _beneficiaries;
 
-        emit ScheduleStarted(_token, _beneficiaries, _amounts, _start, _duration);
-    }
-
-    /** Returns the beneficiaries. */
-    function getBeneficiaries() external view returns (address[] memory) {
-        return beneficiaries;
-    }
-
-    /** Returns the total tokens that will be released to the beneficiary over the duration. */
-    function getTotal(address _beneficiary) external view returns (uint256) {
-        return schedules[_beneficiary].total;
-    }
-
-    /** Returns the total tokens already released to the beneficiary. */
-    function getReleased(address _beneficiary) public view returns (uint256) {
-        return schedules[_beneficiary].released;
-    }
-
-    /** Returns the total tokens that have matured until now according to the release schedule. */
-    function getTotalMatured(
-        address _beneficiary
-    ) public view returns (uint256) {
-        if (block.timestamp < start) return 0;
-
-        Schedule memory schedule = schedules[_beneficiary];
-
-        if (block.timestamp >= start + duration) return schedule.total;
-
-        return (schedule.total * (block.timestamp - start)) / duration;
-    }
-
-    /** Returns the total tokens that can be released now. */
-    function getReleasable(address _beneficiary) public view returns (uint256) {
-        return getTotalMatured(_beneficiary) - getReleased(_beneficiary);
-    }
-
-    /** Returns the total tokens yet to be released to the beneficiary over the total duration. */
-    function getPending(address _beneficiary) external view returns (uint256) {
-        return schedules[_beneficiary].total - schedules[_beneficiary].released;
+        emit ScheduleStarted(
+            _token,
+            _beneficiaries,
+            _amounts,
+            _start,
+            _duration
+        );
     }
 
     /** Release all releasable tokens to the caller. */
@@ -135,8 +114,7 @@ contract LockRelease is ILockRelease, Votes {
             schedules[msg.sender].released +
             releasable;
 
-        // Transfer the voting units
-        // @todo: ensure the following line is correct
+        // Burn the released voting units
         _transferVotingUnits(msg.sender, address(0), releasable);
 
         // Transfer tokens to recipient
@@ -145,29 +123,98 @@ contract LockRelease is ILockRelease, Votes {
         emit TokensReleased(msg.sender, releasable);
     }
 
-    /** Must return the voting units held by an account. */
+    /** Returns the beneficiaries.
+     *
+     * @return address[] array of beneficiary addresses
+     */
+    function getBeneficiaries() external view returns (address[] memory) {
+        return beneficiaries;
+    }
+
+    /** Returns the total tokens that will be released to the beneficiary over the duration.
+     *
+     * @param _beneficiary address of the beneficiary
+     * @return uint256 total tokens that will be released to the beneficiary
+     */
+    function getTotal(address _beneficiary) external view returns (uint256) {
+        return schedules[_beneficiary].total;
+    }
+
+    /** Returns the total tokens already released to the beneficiary.
+     *
+     * @param _beneficiary address of the beneficiary
+     * @return uint256 total tokens already released to the beneficiary
+     */
+    function getReleased(address _beneficiary) public view returns (uint256) {
+        return schedules[_beneficiary].released;
+    }
+
+    /** Returns the total tokens that have matured until now according to the release schedule.
+     *
+     * @param _beneficiary address of the beneficiary
+     * @return uint256 total tokens that have matured
+     */
+    function getTotalMatured(
+        address _beneficiary
+    ) public view returns (uint256) {
+        if (block.timestamp < start) return 0;
+
+        Schedule memory schedule = schedules[_beneficiary];
+
+        if (block.timestamp >= start + duration) return schedule.total;
+
+        return (schedule.total * (block.timestamp - start)) / duration;
+    }
+
+    /** Returns the total tokens that can be released now.
+     *
+     * @param _beneficiary address of the beneficiary
+     * @return uint256 the total tokens that can be released now
+     */
+    function getReleasable(address _beneficiary) public view returns (uint256) {
+        return getTotalMatured(_beneficiary) - getReleased(_beneficiary);
+    }
+
+    /** Returns the total tokens yet to be released to the beneficiary over the total duration.
+     *
+     * @param _beneficiary address of the beneficiary
+     * @return uint256 total tokens yet to be released to the beneficiary
+     */
+    function getPending(address _beneficiary) external view returns (uint256) {
+        return schedules[_beneficiary].total - schedules[_beneficiary].released;
+    }
+
+    /** Returns the current amount of votes that the account has.
+     *
+     * @param _account the address to check current votes for
+     * @return uint256 the current amount of votes that the account has
+     */
+    function getVotes(address _account) public view override returns (uint256) {
+        return super.getVotes(_account) + IERC5805(token).getVotes(_account);
+    }
+
+    /** Returns the amount of votes that the account had at a specific moment in the past.
+     *
+     * @param _account the address to check current votes for
+     * @param _blockNumber the past block number to check the account's votes at
+     * @return uint256 the amount of votes
+     */
+    function getPastVotes(
+        address _account,
+        uint256 _blockNumber
+    ) public view virtual override returns (uint256) {
+        return
+            super.getPastVotes(_account, _blockNumber) +
+            IERC5805(token).getPastVotes(_account, _blockNumber);
+    }
+
+    /** Returns the current number of voting units held by an account.
+     * @param _account the address to check voting units for
+     * @return uint256 the amount of voting units
+     */
     function _getVotingUnits(
         address _account
     ) internal view override returns (uint256) {
-        // @todo: Ensure this line below is correct
         return schedules[_account].total - schedules[_account].released;
-    }
-
-    /** Returns the current amount of votes that `account` has. */
-    function getVotes(address account) public view override returns (uint256) {
-        // @todo: ensure this following line is correct
-        return super.getVotes(account) + IERC5805(token).getVotes(account);
-    }
-
-    /** Returns the amount of votes that `account` had at a specific moment in the past. If the `clock()` is
-     * configured to use block numbers, this will return the value at the end of the corresponding block. */
-    function getPastVotes(
-        address account,
-        uint256 timepoint
-    ) public view virtual override returns (uint256) {
-        // @todo: ensure this following line is correct
-        return
-            super.getPastVotes(account, timepoint) +
-            IERC5805(token).getPastVotes(account, timepoint);
     }
 }
