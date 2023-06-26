@@ -1,10 +1,10 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Votes, IERC5805, EIP712} from "@openzeppelin/contracts/governance/utils/Votes.sol";
 import {ILockRelease} from "./ILockRelease.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Votes, IERC5805, EIP712} from "@openzeppelin/contracts/governance/utils/Votes.sol";
 
 /**
  * This contract allows to create token release schedules and to release those tokens.
@@ -33,16 +33,14 @@ contract LockRelease is ILockRelease, Votes {
     /** Emitted when tokens are released to a recipient. */
     event TokensReleased(address indexed beneficiary, uint256 amount);
 
-    error InvalidInputs();
+    error InvalidArrayLengths();
     error ZeroDuration();
     error InvalidBeneficiary();
     error InvalidToken();
     error InvalidAmount();
     error DuplicateBeneficiary();
     error NothingToRelease();
-    error FutureLookup();
 
-    // @todo: Ensure that the hardcoded EIP712 constructor args are what we want/need
     constructor(
         address _token,
         address[] memory _beneficiaries,
@@ -52,7 +50,7 @@ contract LockRelease is ILockRelease, Votes {
     ) EIP712("DecentLockRelease", "1.0.0") {
         if (_token == address(0)) revert InvalidToken();
         if (_duration == 0) revert ZeroDuration();
-        if (_beneficiaries.length != _amounts.length) revert InvalidInputs();
+        if (_beneficiaries.length != _amounts.length) revert InvalidArrayLengths();
 
         token = _token;
         start = _start;
@@ -69,7 +67,6 @@ contract LockRelease is ILockRelease, Votes {
 
             schedules[beneficiary] = Schedule(amount, 0);
 
-            // @todo: Ensure the following lines are correct
             // give the beneficiary voting units
             _transferVotingUnits(address(0), beneficiary, amount);
 
@@ -136,7 +133,6 @@ contract LockRelease is ILockRelease, Votes {
             releasable;
 
         // Transfer the voting units
-        // @todo: ensure the following line is correct
         _transferVotingUnits(msg.sender, address(0), releasable);
 
         // Transfer tokens to recipient
@@ -149,13 +145,11 @@ contract LockRelease is ILockRelease, Votes {
     function _getVotingUnits(
         address _account
     ) internal view override returns (uint256) {
-        // @todo: Ensure this line below is correct
         return schedules[_account].total - schedules[_account].released;
     }
 
     /** Returns the current amount of votes that `account` has. */
     function getVotes(address account) public view override returns (uint256) {
-        // @todo: ensure this following line is correct
         return super.getVotes(account) + IERC5805(token).getVotes(account);
     }
 
@@ -165,7 +159,6 @@ contract LockRelease is ILockRelease, Votes {
         address account,
         uint256 timepoint
     ) public view virtual override returns (uint256) {
-        // @todo: ensure this following line is correct
         return
             super.getPastVotes(account, timepoint) +
             IERC5805(token).getPastVotes(account, timepoint);
