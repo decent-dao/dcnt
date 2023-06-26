@@ -19,10 +19,13 @@ import {
   address as linearERC20VotingMasterCopyAddress,
 } from "@fractal-framework/fractal-contracts/deployments/goerli/LinearERC20Voting.json";
 import {
+  buildSafeTransaction,
+  buildSignatureBytes,
   calculateProxyAddress,
   getRandomBytes,
   ifaceSafe,
   predictGnosisSafeAddress,
+  safeSignTypedData,
 } from "./daoFunc/azorius";
 
 const abiCoder = new ethers.utils.AbiCoder();
@@ -216,22 +219,53 @@ async function main() {
   );
 
   const linearERC20Voting = await ethers.getContractAt(
-    "LinearERC20Voting",
+    linearERC20VotingMasterCopyABI,
     predictedLinearERC20VotingAddress
   );
 
-  // deployment txs
-  // @todo deploy Safe
-  // @todo deploy linear strategy contract
-  // @todo deploy azorius contract
+  await azoriusContract
+    .connect(deployer)
+    .enableStrategy(linearERC20Voting.address);
 
-  // tx through new Safe
+  // tx through to Safe
   // ?@todo snapshot url?
   // @todo update daoName
-  // @todo set Azorius strategy
-  // @todo enable Azorius module
+  // @todo linear 'setAzorius' tx
+  // Create transaction on Gnosis Safe to setup Azorius module
+  const enableAzoriusModuleData = gnosisSafe.interface.encodeFunctionData(
+    "enableModule",
+    [azoriusContract.address]
+  );
+
+  const enableAzoriusModuleTx = buildSafeTransaction({
+    to: gnosisSafe.address,
+    data: enableAzoriusModuleData,
+    safeTxGas: 1000000, // ? @todo is this correct?
+    nonce: (await gnosisSafe.nonce()).toNumber(),
+  });
+
+  const sigs = [
+    await safeSignTypedData(deployer, gnosisSafe, enableAzoriusModuleTx),
+  ];
+
+  const signatureBytes = buildSignatureBytes(sigs);
+
   // @todo add Azorius Contract as owner
   // ?@todo remove other owners from Safe
+
+  // execute transaction on Gnosis Safe to setup Azorius module
+  await gnosisSafe.execTransaction(
+    enableAzoriusModuleTx.to,
+    enableAzoriusModuleTx.value,
+    enableAzoriusModuleTx.data,
+    enableAzoriusModuleTx.operation,
+    enableAzoriusModuleTx.safeTxGas,
+    enableAzoriusModuleTx.baseGas,
+    enableAzoriusModuleTx.gasPrice,
+    enableAzoriusModuleTx.gasToken,
+    enableAzoriusModuleTx.refundReceiver,
+    signatureBytes
+  );
 }
 
 main()
