@@ -67,6 +67,7 @@ export const predictGnosisSafeCallbackAddress = async (
   );
 };
 
+// @todo check if this is correct for mainnet
 export const calculateProxyAddress = (
   factory: Contract,
   masterCopy: string,
@@ -89,13 +90,6 @@ export const calculateProxyAddress = (
     salt,
     ethers.utils.keccak256(byteCode)
   );
-};
-
-export const EIP_DOMAIN = {
-  EIP712Domain: [
-    { type: "uint256", name: "chainId" },
-    { type: "address", name: "verifyingContract" },
-  ],
 };
 
 export const EIP712_SAFE_TX_TYPE = {
@@ -207,90 +201,6 @@ export const abiSafe = [
   "function isModuleEnabled(address module) public view returns (bool)",
 ];
 
-export const abiFactory = [
-  "event ModuleProxyCreation(address indexed proxy,address indexed masterCopy)",
-  "function deployModule(address masterCopy,bytes memory initializer,uint256 saltNonce) public returns (address proxy)",
-];
-
-export const abiAzorius = [
-  "function owner() public view returns (address)",
-  "function avatar() public view returns (address)",
-  "function target() public view returns (address)",
-];
-
-export const calculateSafeDomainSeparator = (
-  safe: Contract,
-  chainId: BigNumberish
-): string => {
-  return utils._TypedDataEncoder.hashDomain({
-    verifyingContract: safe.address,
-    chainId,
-  });
-};
-
-export const preimageSafeTransactionHash = (
-  safe: Contract,
-  safeTx: SafeTransaction,
-  chainId: BigNumberish
-): string => {
-  return utils._TypedDataEncoder.encode(
-    { verifyingContract: safe.address, chainId },
-    EIP712_SAFE_TX_TYPE,
-    safeTx
-  );
-};
-
-export const calculateSafeTransactionHash = (
-  safe: Contract,
-  safeTx: SafeTransaction,
-  chainId: BigNumberish
-): string => {
-  return utils._TypedDataEncoder.hash(
-    { verifyingContract: safe.address, chainId },
-    EIP712_SAFE_TX_TYPE,
-    safeTx
-  );
-};
-
-export const calculateSafeMessageHash = (
-  safe: Contract,
-  message: string,
-  chainId: BigNumberish
-): string => {
-  return utils._TypedDataEncoder.hash(
-    { verifyingContract: safe.address, chainId },
-    EIP712_SAFE_MESSAGE_TYPE,
-    { message }
-  );
-};
-
-export const safeApproveHash = async (
-  signer: Signer,
-  safe: Contract,
-  safeTx: SafeTransaction,
-  skipOnChainApproval?: boolean
-): Promise<SafeSignature> => {
-  if (!skipOnChainApproval) {
-    if (!signer.provider)
-      throw Error("Provider required for on-chain approval");
-    const chainId = (await signer.provider.getNetwork()).chainId;
-    const typedDataHash = utils.arrayify(
-      calculateSafeTransactionHash(safe, safeTx, chainId)
-    );
-    const signerSafe = safe.connect(signer);
-    await signerSafe.approveHash(typedDataHash);
-  }
-  const signerAddress = await signer.getAddress();
-  return {
-    signer: signerAddress,
-    data:
-      "0x000000000000000000000000" +
-      signerAddress.slice(2) +
-      "0000000000000000000000000000000000000000000000000000000000000000" +
-      "01",
-  };
-};
-
 export const safeSignTypedData = async (
   signer: Signer & TypedDataSigner,
   safe: Contract,
@@ -325,16 +235,6 @@ export const signHash = async (
   };
 };
 
-export const safeSignMessage = async (
-  signer: Signer,
-  safe: Contract,
-  safeTx: SafeTransaction,
-  chainId?: BigNumberish
-): Promise<SafeSignature> => {
-  const cid = chainId || (await signer.provider!.getNetwork()).chainId;
-  return signHash(signer, calculateSafeTransactionHash(safe, safeTx, cid));
-};
-
 export const buildSignatureBytes = (signatures: SafeSignature[]): string => {
   signatures.sort((left, right) =>
     left.signer.toLowerCase().localeCompare(right.signer.toLowerCase())
@@ -344,23 +244,6 @@ export const buildSignatureBytes = (signatures: SafeSignature[]): string => {
     signatureBytes += sig.data.slice(2);
   }
   return signatureBytes;
-};
-
-export const logGas = async (
-  message: string,
-  tx: Promise<any>,
-  skip?: boolean
-): Promise<any> => {
-  return tx.then(async (result) => {
-    const receipt = await result.wait();
-    if (!skip)
-      console.log(
-        "           Used",
-        receipt.gasUsed.toNumber(),
-        `gas for >${message}<`
-      );
-    return result;
-  });
 };
 
 export const executeTx = async (
