@@ -83,6 +83,26 @@ contract LockRelease is ILockRelease, Votes {
         emit ScheduleStarted(_token, _beneficiaries, _amounts, _start, _duration);
     }
 
+    /** Release all releasable tokens to the caller. */
+    function release() external {
+        uint256 releasable = getReleasable(msg.sender);
+
+        if (releasable == 0) revert NothingToRelease();
+
+        // Update released amount
+        schedules[msg.sender].released =
+            schedules[msg.sender].released +
+            releasable;
+
+        // Transfer the voting units
+        _transferVotingUnits(msg.sender, address(0), releasable);
+
+        // Transfer tokens to recipient
+        IERC20(token).safeTransfer(msg.sender, releasable);
+
+        emit TokensReleased(msg.sender, releasable);
+    }
+
     /** Returns the beneficiaries. */
     function getBeneficiaries() external view returns (address[] memory) {
         return beneficiaries;
@@ -121,33 +141,6 @@ contract LockRelease is ILockRelease, Votes {
         return schedules[_beneficiary].total - schedules[_beneficiary].released;
     }
 
-    /** Release all releasable tokens to the caller. */
-    function release() external {
-        uint256 releasable = getReleasable(msg.sender);
-
-        if (releasable == 0) revert NothingToRelease();
-
-        // Update released amount
-        schedules[msg.sender].released =
-            schedules[msg.sender].released +
-            releasable;
-
-        // Transfer the voting units
-        _transferVotingUnits(msg.sender, address(0), releasable);
-
-        // Transfer tokens to recipient
-        IERC20(token).safeTransfer(msg.sender, releasable);
-
-        emit TokensReleased(msg.sender, releasable);
-    }
-
-    /** Must return the voting units held by an account. */
-    function _getVotingUnits(
-        address _account
-    ) internal view override returns (uint256) {
-        return schedules[_account].total - schedules[_account].released;
-    }
-
     /** Returns the current amount of votes that `account` has. */
     function getVotes(address account) public view override returns (uint256) {
         return super.getVotes(account) + IERC5805(token).getVotes(account);
@@ -162,5 +155,12 @@ contract LockRelease is ILockRelease, Votes {
         return
             super.getPastVotes(account, timepoint) +
             IERC5805(token).getPastVotes(account, timepoint);
+    }
+
+    /** Returns the voting units held by an account. */
+    function _getVotingUnits(
+        address _account
+    ) internal view override returns (uint256) {
+        return schedules[_account].total - schedules[_account].released;
     }
 }
