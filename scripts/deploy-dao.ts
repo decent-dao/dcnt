@@ -34,7 +34,7 @@ async function main() {
 
   // First deploy DCNTToken and mint tokens to deployer address
   const initialSupply = ethers.utils.parseEther("10000"); // Supply for Token Generation Event
-  const token = await DCNTTokenArtifact.deploy(initialSupply);
+  const token = await DCNTTokenArtifact.deploy(initialSupply, deployer.address);
   await token.deployed();
   console.log(`DCNTToken deployed to: ${token.address}`);
 
@@ -72,15 +72,16 @@ async function main() {
   await lockRelease.deployed();
   console.log(`LockRelease contract deployed to: ${lockRelease.address}`);
 
+  // Make sure enough time has passed before minting new tokens
+  await new Promise((resolve) =>
+    setTimeout(resolve, 1000 * 60 * 60 * 24 * 365)
+  ); // Wait for a year
+
   // Mint and fund the lock contract with the locked token amounts
   await token.mint(lockRelease.address, totalLockedAmount);
   console.log(
     `Minted and transferred ${totalLockedAmount} tokens to LockRelease contract`
   );
-
-  // Set up initial voting power for locked tokens
-  await token.setUpLockedVotingPower(lockRelease.address);
-  console.log(`Set up locked voting power for ${lockRelease.address}`);
 
   // Fractal DAO is deployed with token as the governance token, and the lock contract as the address on the strategy for governance
   // Deployer funds Fractal DAO with remaining tokens (these are unlocked)

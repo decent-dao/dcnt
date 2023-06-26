@@ -8,7 +8,10 @@ async function main() {
   const freeMintTotal = ethers.utils.parseEther(freeMintWhole.toString());
 
   const DCNTToken = await ethers.getContractFactory("DCNTToken");
-  const dcntTx = await DCNTToken.getDeployTransaction(freeMintTotal);
+  const dcntTx = await DCNTToken.getDeployTransaction(
+    freeMintTotal,
+    frame.address
+  );
 
   const deployer: string = (
     await frame.request({ method: "eth_requestAccounts" })
