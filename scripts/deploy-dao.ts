@@ -18,15 +18,15 @@ import {
   abi as linearERC20VotingMasterCopyABI,
   address as linearERC20VotingMasterCopyAddress,
 } from "@fractal-framework/fractal-contracts/deployments/goerli/LinearERC20Voting.json";
+import { predictGnosisSafeAddress } from "./daoFunc/azorius";
+import { ifaceSafe } from "./daoFunc/types";
 import {
-  buildSafeTransaction,
-  buildSignatureBytes,
-  calculateProxyAddress,
   getRandomBytes,
-  ifaceSafe,
-  predictGnosisSafeAddress,
+  calculateProxyAddress,
+  buildSafeTransaction,
   safeSignTypedData,
-} from "./daoFunc/azorius";
+  buildSignatureBytes,
+} from "./daoFunc/utils";
 
 const abiCoder = new ethers.utils.AbiCoder();
 
