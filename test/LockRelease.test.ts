@@ -23,24 +23,124 @@ describe("LockRelease", async function () {
   let startTime: number;
   let duration: number;
 
-  describe("LockRelease Features", function () {
+  beforeEach(async function () {
+    [deployer, owner, beneficiary1, beneficiary2, beneficiary3, beneficiary4] =
+      await ethers.getSigners();
+
+    // Token unlocks start in 100 seconds from current time, and vesting lasts for 100 seconds
+    startTime = (await time.latest()) + 100;
+    duration = 100;
+
+    // Deploy DCNT token
+    dcnt = await new DCNTToken__factory(deployer).deploy(1000, owner.address);
+  });
+
+  describe("LockRelease Deployment", function () {
+    it("Cannot be deployed with token as address zero", async function () {
+      await expect(
+        new LockRelease__factory(deployer).deploy(
+          ethers.constants.AddressZero,
+          [
+            beneficiary1.address,
+            beneficiary2.address,
+            beneficiary3.address,
+            beneficiary4.address,
+          ],
+          [100, 200, 300, 400],
+          startTime,
+          duration
+        )
+      ).to.be.revertedWith("InvalidToken()");
+    });
+
+    it("Cannot be deployed with a duration of zero", async function () {
+      await expect(
+        new LockRelease__factory(deployer).deploy(
+          dcnt.address,
+          [
+            beneficiary1.address,
+            beneficiary2.address,
+            beneficiary3.address,
+            beneficiary4.address,
+          ],
+          [100, 200, 300, 400],
+          startTime,
+          0
+        )
+      ).to.be.revertedWith("ZeroDuration()");
+    });
+
+    it("Cannot be deployed with invalid array lengths", async function () {
+      await expect(
+        new LockRelease__factory(deployer).deploy(
+          dcnt.address,
+          [
+            beneficiary1.address,
+            beneficiary2.address,
+            beneficiary3.address,
+            beneficiary4.address,
+          ],
+          [100, 200, 300],
+          startTime,
+          duration
+        )
+      ).to.be.revertedWith("InvalidArrayLengths()");
+    });
+
+    it("Cannot be deployed if one of the amounts is zero", async function () {
+      await expect(
+        new LockRelease__factory(deployer).deploy(
+          dcnt.address,
+          [
+            beneficiary1.address,
+            beneficiary2.address,
+            beneficiary3.address,
+            beneficiary4.address,
+          ],
+          [100, 200, 300, 0],
+          startTime,
+          duration
+        )
+      ).to.be.revertedWith("InvalidAmount()");
+    });
+
+    it("Cannot be deployed if one of the beneficiaries is address zero", async function () {
+      await expect(
+        new LockRelease__factory(deployer).deploy(
+          dcnt.address,
+          [
+            ethers.constants.AddressZero,
+            beneficiary2.address,
+            beneficiary3.address,
+            beneficiary4.address,
+          ],
+          [100, 200, 300, 400],
+          startTime,
+          duration
+        )
+      ).to.be.revertedWith("InvalidBeneficiary()");
+    });
+
+    it("Cannot be deployed with duplicate beneficiaries", async function () {
+      await expect(
+        new LockRelease__factory(deployer).deploy(
+          dcnt.address,
+          [
+            beneficiary1.address,
+            beneficiary1.address,
+            beneficiary3.address,
+            beneficiary4.address,
+          ],
+          [100, 200, 300, 400],
+          startTime,
+          duration
+        )
+      ).to.be.revertedWith("DuplicateBeneficiary()");
+    });
+  });
+
+  describe("LockRelease Functionality", function () {
     beforeEach(async function () {
-      [
-        deployer,
-        owner,
-        beneficiary1,
-        beneficiary2,
-        beneficiary3,
-        beneficiary4,
-      ] = await ethers.getSigners();
-
-      // Deploy contracts
-      dcnt = await new DCNTToken__factory(deployer).deploy(1000, owner.address);
-
-      // Token unlocks start in 100 seconds from current time, and vesting lasts for 100 seconds
-      startTime = (await time.latest()) + 100;
-      duration = 100;
-
       lockRelease = await new LockRelease__factory(deployer).deploy(
         dcnt.address,
         [
@@ -567,7 +667,7 @@ describe("LockRelease", async function () {
       ).to.be.revertedWith("ERC20Votes: future lookup");
     });
 
-    it.only("Reverts when release is called and releasable amount is zero", async function () {
+    it("Reverts when release is called and releasable amount is zero", async function () {
       // vesting hasn't started, so releasable amount is zero
       expect(await lockRelease.getReleasable(beneficiary1.address)).to.eq(0);
       await expect(
