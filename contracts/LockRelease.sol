@@ -67,11 +67,6 @@ contract LockRelease is ILockRelease, Votes {
         if (_beneficiaries.length != _amounts.length)
             revert InvalidArrayLengths();
 
-        token = _token;
-        start = _start;
-        duration = _duration;
-        beneficiaries = _beneficiaries;
-
         for (uint16 i = 0; i < _beneficiaries.length; ) {
             uint256 amount = _amounts[i];
             if (amount == 0) revert InvalidAmount();
@@ -93,6 +88,11 @@ contract LockRelease is ILockRelease, Votes {
                 ++i;
             }
         }
+
+        token = _token;
+        start = _start;
+        duration = _duration;
+        beneficiaries = _beneficiaries;
 
         emit ScheduleStarted(
             _token,
