@@ -1,12 +1,13 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import { ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import { ERC20VotesLockable } from  "./ERC20VotesLockable.sol";
+import { ERC20, ERC20Votes, ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+
+// @todo handle initial minting correctly. Can it be done inside the constructor?
 
 /// @notice the dcnt token
-contract DCNTToken is ERC20VotesLockable {
+contract DCNTToken is ERC20Votes, Ownable {
     uint128 public nextMint; // Timestamp
     uint32 public constant MINIMUM_MINT_INTERVAL = 365 days;
     uint8 public constant MINT_CAP_BPS = 200; // 2%
@@ -15,9 +16,10 @@ contract DCNTToken is ERC20VotesLockable {
     error MintTooSoon();
 
     /// @param _supply amount of tokens to mint at Token Generation Event
-    constructor(uint256 _supply) ERC20("Decent", "DCNT") ERC20Permit("Decent") {
+    constructor(uint256 _supply, address _owner) ERC20("Decent", "DCNT") ERC20Permit("Decent") {
         _mint(msg.sender, _supply);
         nextMint = uint128(block.timestamp + MINIMUM_MINT_INTERVAL);
+        _transferOwnership(_owner);
     }
 
     /// @notice mint can be called at most once every 365 days,
