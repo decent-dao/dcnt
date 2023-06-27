@@ -1,8 +1,8 @@
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { DCNTToken, LockRelease } from "../../typechain";
-import { decentDAOConfig } from "./DCNTDAO.config";
+import { DCNTToken, LockRelease } from "../typechain";
+import { decentDAOConfig } from "./dcntDAOConfig";
 
 export const deployDecentToken = async (
   deployer: SignerWithAddress

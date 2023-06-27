@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { buildContractCall, encodeMultiSend } from "./utils";
-import { LockRelease } from "./../../typechain/LockRelease.d";
-import { DCNTToken } from "./../../typechain/DCNTToken.d";
 import { constants, Contract } from "ethers";
 import {
   KeyValuePairs,
@@ -12,6 +10,7 @@ import {
   LinearERC20Voting,
 } from "@fractal-framework/fractal-contracts";
 import { MetaTransaction, SafeTransaction } from "./types";
+import { DCNTToken, LockRelease } from "../typechain";
 
 export class BaseTxBuilder {
   // set base contracts and master copies that are used in the tx

@@ -1,4 +1,4 @@
-import { AzoriusTxBuilder } from "./daoFunc/AzoriusTxBuilder";
+import { AzoriusTxBuilder } from "../DaoBuilder/AzoriusTxBuilder";
 import { ethers } from "hardhat";
 import {
   GnosisSafe,
@@ -9,11 +9,11 @@ import {
   getMasterCopies,
   getSafeData,
   SAFE_VERSION,
-} from "./daoFunc/safe";
+} from "../DaoBuilder/safe";
 import { getMultiSendCallOnlyDeployment } from "@safe-global/safe-deployments";
-import { deployDecentToken } from "./daoFunc/mint";
-import { encodeMultiSend } from "./daoFunc/utils";
-import { decentDAOConfig } from "./daoFunc/DCNTDAO.config";
+import { deployDecentToken } from "../DaoBuilder/dcntTokenDeploy";
+import { encodeMultiSend } from "../DaoBuilder/utils";
+import { decentDAOConfig } from "../DaoBuilder/dcntDAOConfig";
 import { utils } from "ethers";
 
 async function createDAO() {

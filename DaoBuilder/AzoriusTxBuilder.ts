@@ -1,7 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract } from "ethers";
-import { LockRelease } from "./../../typechain/LockRelease.d";
-import { DCNTToken } from "./../../typechain/DCNTToken.d";
 import { BaseTxBuilder } from "./BaseTxBuilder";
 import {
   Azorius,
@@ -24,7 +22,8 @@ import {
   generateContractByteCodeLinear,
   generateSalt,
 } from "./utils";
-import { decentDAOConfig } from "./DCNTDAO.config";
+import { decentDAOConfig } from "./dcntDAOConfig";
+import { DCNTToken, LockRelease } from "../typechain";
 
 export class AzoriusTxBuilder extends BaseTxBuilder {
   private encodedSetupAzoriusData: string | undefined;
