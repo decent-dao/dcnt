@@ -1,5 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber, Contract } from "ethers";
+import { Contract } from "ethers";
 import { LockRelease } from "./../../typechain/LockRelease.d";
 import { DCNTToken } from "./../../typechain/DCNTToken.d";
 import { BaseTxBuilder } from "./BaseTxBuilder";
@@ -24,6 +24,7 @@ import {
   generateContractByteCodeLinear,
   generateSalt,
 } from "./utils";
+import { decentDAOConfig } from "./DCNTDAO.config";
 
 export class AzoriusTxBuilder extends BaseTxBuilder {
   private encodedSetupAzoriusData: string | undefined;
@@ -39,7 +40,7 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
   private strategyNonce: string;
 
   constructor(
-    deployer: SignerWithAddress,
+    private deployer: SignerWithAddress,
     predictedSafeContract: GnosisSafe,
     dcntTokenContract: DCNTToken,
     lockReleaseContract: LockRelease,
@@ -196,10 +197,10 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
         this.predictedSafeContract.address, // owner
         this.lockReleaseContract.address, // governance
         "0x0000000000000000000000000000000000000001", // Azorius module
-        BigNumber.from(50), // voting period (blocks)
-        0, // proposer weight, how much is needed to create a proposal.
-        BigNumber.from(4), // quorom numerator, denominator is 1,000,000, so quorum percentage is 50%
-        BigNumber.from(500000), // basis numerator, denominator is 1,000,000, so basis percentage is 50% (simple majority)
+        decentDAOConfig.votingPeriod, // voting period (blocks)
+        decentDAOConfig.proposalRequiredWeight, // proposer weight, how much is needed to create a proposal.
+        decentDAOConfig.quorum, // quorom numerator, denominator is 1,000,000, so quorum percentage is 50%
+        decentDAOConfig.votingBasis, // basis numerator, denominator is 1,000,000, so basis percentage is 50% (simple majority)
       ]
     );
 
@@ -238,8 +239,8 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
         this.predictedSafeContract.address,
         this.predictedSafeContract.address,
         [this.predictedStrategyAddress],
-        0, // timelock period in blocks
-        0, // execution period in blocks
+        decentDAOConfig.timeLockPeriod, // timelock period in blocks
+        decentDAOConfig.executionPeriod, // execution period in blocks
       ]
     );
 
