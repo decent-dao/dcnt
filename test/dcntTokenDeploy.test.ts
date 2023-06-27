@@ -7,7 +7,7 @@ import { ethers } from "hardhat";
 import { deployDecentToken } from '../DaoBuilder/dcntTokenDeploy';
 import { decentTestConfig } from './testDAOConfigs';
 
-describe.only("deployDecentToken", function () {
+describe("deployDecentToken", function () {
   this.timeout(120000)
   let deployer: SignerWithAddress;
   let initialSupply: BigNumber;
