@@ -66,7 +66,7 @@ async function createDAO() {
 
   const [deployer] = await ethers.getSigners();
   const { dcntTokenContract, lockReleaseContract, totalLockedAmount } =
-    await deployDecentToken(deployer);
+    await deployDecentToken(deployer, decentDAOConfig);
 
   console.log("Decent token deployed");
   console.table({

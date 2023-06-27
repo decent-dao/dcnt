@@ -1,11 +1,29 @@
+import { DecentDAOConfig } from "./types";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { DCNTToken, LockRelease } from "../typechain";
-import { decentDAOConfig } from "./dcntDAOConfig";
+
+export const retryCall = async (
+  fn: () => Promise<any>,
+  retriesLeft = 5,
+  interval = 1000
+): Promise<any> => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retriesLeft) {
+      await new Promise((resolve) => setTimeout(resolve, interval));
+      return retryCall(fn, retriesLeft - 1, interval);
+    }
+    throw new Error(error as string);
+  }
+};
 
 export const deployDecentToken = async (
-  deployer: SignerWithAddress
+  deployer: SignerWithAddress,
+  decentDAOConfig: DecentDAOConfig
 ): Promise<{
   totalLockedAmount: BigNumber;
   dcntTokenContract: DCNTToken;
@@ -20,7 +38,6 @@ export const deployDecentToken = async (
   await token.deployed();
   console.log(`DCNTToken deployed to: ${token.address}`);
 
-  // Mocked amounts for beneficiaries
   const totalLockedAmount = decentDAOConfig.beneficiaries.reduce(
     (a, b) => a.add(b.lockedAmount),
     ethers.BigNumber.from(0)
@@ -40,17 +57,19 @@ export const deployDecentToken = async (
   await lockRelease.deployed();
   console.log(`LockRelease contract deployed to: ${lockRelease.address}`);
 
-  // Make sure enough time has passed before minting new tokens
-  await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
-  console.log("1 minute has passed");
-
-  await token
-    .transfer(lockRelease.address, totalLockedAmount)
-    .catch((e) => console.error(e));
-  console.log(
-    `Minted and transferred ${totalLockedAmount} tokens to LockRelease contract`
+  const tokenTransferTx = await token.transfer(
+    lockRelease.address,
+    totalLockedAmount
   );
 
+  await tokenTransferTx.wait();
+
+  console.log(`Transferred ${totalLockedAmount} DCNT to LockRelease contract`);
+  console.table({
+    "DCNTToken address": token.address,
+    "LockRelease address": lockRelease.address,
+    "Total locked amount": totalLockedAmount.toString(),
+  });
   return {
     totalLockedAmount,
     dcntTokenContract: token,

@@ -20,3 +20,20 @@ export interface SafeSignature {
   signer: string;
   data: string;
 }
+
+export interface DecentDAOConfig {
+  lockStart: number;
+  lockDuration: number;
+  snapshotURL: string;
+  initialSupply: string;
+  votingPeriod: number;
+  quorum: number;
+  timeLockPeriod: number;
+  executionPeriod: number;
+  votingBasis: number;
+  proposalRequiredWeight: number;
+  beneficiaries: {
+    address: string;
+    lockedAmount: BigNumber;
+  }[];
+}
