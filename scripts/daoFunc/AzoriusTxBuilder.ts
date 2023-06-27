@@ -66,7 +66,7 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
       buildContractCall(
         this.predictedSafeContract,
         "removeOwner",
-        [this.multiSendContract.defaultAddress, owner, 1],
+        [this.multiSendContract.address, owner, 1],
         0,
         false
       )
@@ -117,7 +117,7 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
     return buildContractCall(
       this.predictedSafeContract,
       "removeOwner",
-      [this.azoriusContract.address, this.multiSendContract.defaultAddress, 1],
+      [this.azoriusContract.address, this.multiSendContract.address, 1],
       0,
       false
     );
@@ -140,7 +140,7 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
   public signatures = (): string => {
     return (
       "0x000000000000000000000000" +
-      this.multiSendContract.defaultAddress.slice(2) +
+      this.multiSendContract.address.slice(2) +
       "0000000000000000000000000000000000000000000000000000000000000000" +
       "01"
     );

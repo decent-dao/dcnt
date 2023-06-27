@@ -4,11 +4,11 @@ import { DCNTToken, LockRelease } from "../../typechain";
 // @todo replace with real addresses and amounts
 const beneficiaries = [
   {
-    address: "0xMockBeneficiary1",
+    address: "0x629750317d320B8bB4d48D345A6d699Cc855c4a6",
     lockedAmount: ethers.utils.parseEther("1000"),
   },
   {
-    address: "0xMockBeneficiary2",
+    address: "0x065FEDAaD9486C7647EBe78cD5be05A5DF29Fe76",
     lockedAmount: ethers.utils.parseEther("1000"),
   },
 ];

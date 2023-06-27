@@ -75,7 +75,7 @@ export class BaseTxBuilder {
       this.predictedSafeContract,
       "execTransaction",
       [
-        this.multiSendContract.defaultAddress, // to
+        this.multiSendContract.address, // to
         "0", // value
         this.multiSendContract.interface.encodeFunctionData("multiSend", [
           safeInternalTx,

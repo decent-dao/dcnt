@@ -70,6 +70,9 @@ async function createDAO() {
     )
   );
   const encodedTx = encodeMultiSend(txs);
+  const execution = await multisendContract.executeTransaction(encodedTx);
+  execution.wait();
+  console.log("DAO created", predictedSafeContract.address);
 }
 
 createDAO()

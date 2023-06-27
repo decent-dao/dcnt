@@ -1,20 +1,22 @@
 import { SafeTransaction } from "./types";
-import { buildContractCall } from "./utils";
-import { BigNumber, Contract } from "ethers";
+import { buildContractCall, getRandomBytes } from "./utils";
+import { Contract } from "ethers";
 import { ethers } from "hardhat";
 import {
-  GnosisSafe__factory as GnosisSafeFactory,
+  GnosisSafeProxyFactory__factory as GnosisSafeFactory,
   Azorius as IAzorius,
   ModuleProxyFactory as IModuleProxyFractory,
   KeyValuePairs as IKeyValuePairs,
   FractalRegistry as IFractalRegistry,
+  GnosisSafe,
+  GnosisSafeProxyFactory,
 } from "@fractal-framework/fractal-contracts";
-import ModuleProxyFactory, {
-  abi as moduleProxyFractoryABI,
-  address as moduleProxyFactoryAddress,
-} from "@fractal-framework/fractal-contracts/deployments/goerli/ModuleProxyFactory.json";
+import ModuleProxyFactory from "@fractal-framework/fractal-contracts/deployments/goerli/ModuleProxyFactory.json";
 import { getCreate2Address, solidityKeccak256 } from "ethers/lib/utils";
-import { getProxyFactoryDeployment } from "@safe-global/safe-deployments";
+import {
+  getProxyFactoryDeployment,
+  getSafeSingletonDeployment,
+} from "@safe-global/safe-deployments";
 import Azorius from "@fractal-framework/fractal-contracts/deployments/goerli/Azorius.json";
 import FractalRegistry from "@fractal-framework/fractal-contracts/deployments/goerli/FractalRegistry.json";
 import KeyValuePairs from "@fractal-framework/fractal-contracts/deployments/goerli/KeyValuePairs.json";
@@ -33,12 +35,12 @@ export const getMasterCopies = async (): Promise<{
     ModuleProxyFactory.abi,
     ModuleProxyFactory.address
   )) as IModuleProxyFractory;
-  // @todo update DCNT Token Deployment
 
   const fractalAzoriusMasterCopyContract = (await ethers.getContractAt(
     Azorius.abi,
     Azorius.address
   )) as IAzorius;
+
   const fractalRegistryContract = (await ethers.getContractAt(
     FractalRegistry.abi,
     FractalRegistry.address
@@ -65,21 +67,26 @@ export const getSafeData = async (
   });
   if (!gnosisFactory) throw new Error("Gnosis factory not found");
 
-  const saltNum = BigNumber.from(
-    "0x856d90216588f9ffc124d1480a440e1c012c7a816952bc968d737bae5d4e139c"
-  );
+  const saltNum = getRandomBytes();
 
-  const gnosisSafeFactoryContract = await ethers.getContractAt(
+  const gnosisSafeFactoryContract = (await ethers.getContractAt(
     GnosisSafeFactory.abi,
     gnosisFactory.defaultAddress
-  );
+  )) as GnosisSafeProxyFactory;
 
-  const gnosisSafeSingletonContract = await ethers.getContractAt(
-    moduleProxyFractoryABI,
-    moduleProxyFactoryAddress
-  );
+  const gnosisSingleton = getSafeSingletonDeployment({
+    version: SAFE_VERSION,
+    network: CHAIN_ID.toString(),
+  });
 
-  const signers = [multiSendContract.defaultAddress];
+  if (!gnosisSingleton) throw new Error("Gnosis singleton not found");
+
+  const gnosisSafeSingletonContract = (await ethers.getContractAt(
+    gnosisSingleton.abi,
+    gnosisSingleton.defaultAddress
+  )) as GnosisSafe;
+
+  const signers = [multiSendContract.address];
 
   const createGnosisCalldata =
     gnosisSafeSingletonContract.interface.encodeFunctionData("setup", [
