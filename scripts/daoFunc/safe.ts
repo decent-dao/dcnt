@@ -5,7 +5,6 @@ import { ethers } from "hardhat";
 import {
   GnosisSafe__factory as GnosisSafeFactory,
   Azorius as IAzorius,
-  LinearERC20Voting as ILinearERC20Voting,
   ModuleProxyFactory as IModuleProxyFractory,
 } from "@fractal-framework/fractal-contracts";
 import ModuleProxyFactory, {
@@ -18,7 +17,6 @@ import {
   SingletonDeployment,
 } from "@safe-global/safe-deployments";
 import Azorius from "@fractal-framework/fractal-contracts/deployments/goerli/Azorius.json";
-import LinearERC20Voting from "@fractal-framework/fractal-contracts/deployments/goerli/LinearERC20Voting.json";
 const { AddressZero, HashZero } = ethers.constants;
 
 export const CHAIN_ID = 5;
@@ -26,7 +24,6 @@ export const SAFE_VERSION = "1.3.0";
 
 export const getMasterCopies = async (): Promise<{
   zodiacModuleProxyFactoryContract: IModuleProxyFractory;
-  linearVotingMasterCopyContract: ILinearERC20Voting;
   fractalAzoriusMasterCopyContract: IAzorius;
 }> => {
   const zodiacModuleProxyFactoryContract = (await ethers.getContractAt(
@@ -34,10 +31,7 @@ export const getMasterCopies = async (): Promise<{
     ModuleProxyFactory.address
   )) as IModuleProxyFractory;
   // @todo update DCNT Token Deployment
-  const linearVotingMasterCopyContract = (await ethers.getContractAt(
-    LinearERC20Voting.abi,
-    LinearERC20Voting.address
-  )) as ILinearERC20Voting;
+
   const fractalAzoriusMasterCopyContract = (await ethers.getContractAt(
     Azorius.abi,
     Azorius.address
@@ -45,7 +39,6 @@ export const getMasterCopies = async (): Promise<{
 
   return {
     zodiacModuleProxyFactoryContract,
-    linearVotingMasterCopyContract,
     fractalAzoriusMasterCopyContract,
   };
 };
