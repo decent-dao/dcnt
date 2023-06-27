@@ -1,3 +1,4 @@
+import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { DCNTToken, LockRelease } from "../../typechain";
@@ -6,6 +7,7 @@ import { decentDAOConfig } from "./DCNTDAO.config";
 export const deployDecentToken = async (
   deployer: SignerWithAddress
 ): Promise<{
+  totalLockedAmount: BigNumber;
   dcntTokenContract: DCNTToken;
   lockReleaseContract: LockRelease;
 }> => {
@@ -50,6 +52,7 @@ export const deployDecentToken = async (
   );
 
   return {
+    totalLockedAmount,
     dcntTokenContract: token,
     lockReleaseContract: lockRelease,
   };

@@ -13,6 +13,8 @@ import {
 import { getMultiSendCallOnlyDeployment } from "@safe-global/safe-deployments";
 import { deployDecentToken } from "./daoFunc/mint";
 import { encodeMultiSend } from "./daoFunc/utils";
+import { decentDAOConfig } from "./daoFunc/DCNTDAO.config";
+import { utils } from "ethers";
 
 async function createDAO() {
   const singletonContract = getMultiSendCallOnlyDeployment({
@@ -63,9 +65,8 @@ async function createDAO() {
   });
 
   const [deployer] = await ethers.getSigners();
-  const { dcntTokenContract, lockReleaseContract } = await deployDecentToken(
-    deployer
-  );
+  const { dcntTokenContract, lockReleaseContract, totalLockedAmount } =
+    await deployDecentToken(deployer);
 
   console.log("Decent token deployed");
   console.table({
@@ -86,7 +87,6 @@ async function createDAO() {
     linearVotingMasterCopyContract
   );
   console.log("Azorius tx builder created");
-  // @todo initial supply -> dao
 
   const txs = [safeTx];
   const internalTxs = [
@@ -111,12 +111,37 @@ async function createDAO() {
 
   const encodedTx = encodeMultiSend(txs);
 
+  console.log("Sending tx");
   const execution = await multisendContract.multiSend(encodedTx, {
     gasLimit: 5000000,
   });
   execution.wait();
   console.log("Tx sent", execution.hash);
   console.log("DAO created", predictedSafeContract.address);
+
+  console.log("Transfering tokens to DAO");
+  const amountToTransfer = utils
+    .parseEther(decentDAOConfig.initialSupply)
+    .sub(totalLockedAmount);
+  const tokenTransfer = await dcntTokenContract.transfer(
+    predictedSafeContract.address,
+    amountToTransfer
+  );
+  tokenTransfer.wait();
+  console.log("Tokens transfered");
+  console.table({
+    amountToTransfer: amountToTransfer,
+    hash: tokenTransfer.hash,
+  });
+
+  const transferTokenOwnership = await dcntTokenContract.transferOwnership(
+    predictedSafeContract.address
+  );
+  transferTokenOwnership.wait();
+  console.log("Token ownership transfered");
+  console.table({
+    hash: transferTokenOwnership.hash,
+  });
 }
 
 createDAO()
