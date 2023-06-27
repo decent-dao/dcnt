@@ -12,14 +12,18 @@ import {
 } from "./daoFunc/safe";
 import { getMultiSendCallOnlyDeployment } from "@safe-global/safe-deployments";
 import { deployDecentToken } from "./daoFunc/mint";
+import { encodeMultiSend } from "./daoFunc/utils";
 
 async function createDAO() {
-  const multisendContract = getMultiSendCallOnlyDeployment({
+  const singletonContract = getMultiSendCallOnlyDeployment({
     version: SAFE_VERSION,
     network: CHAIN_ID.toString(),
   });
-  if (!multisendContract) throw new Error("Multisend contract not found");
-
+  if (!singletonContract) throw new Error("Multisend contract not found");
+  const multisendContract = await ethers.getContractAt(
+    singletonContract.abi,
+    singletonContract.defaultAddress
+  );
   const [predictedGnosisSafeAddress, safeTx] = await getSafeData(
     multisendContract
   );
@@ -28,26 +32,44 @@ async function createDAO() {
     predictedGnosisSafeAddress
   )) as GnosisSafe;
 
-  const { zodiacModuleProxyFactoryContract, fractalAzoriusMasterCopyContract } =
-    await getMasterCopies();
+  const {
+    zodiacModuleProxyFactoryContract,
+    fractalAzoriusMasterCopyContract,
+    fractalRegistryContract,
+    keyValuePairContract,
+  } = await getMasterCopies();
 
   const { dcntTokenContract, lockReleaseContract } = await deployDecentToken();
 
-  const azoriusBuild = new AzoriusTxBuilder(
+  const azoriusTxBuilder = new AzoriusTxBuilder(
     predictedSafeContract,
     dcntTokenContract,
     lockReleaseContract,
     multisendContract,
     zodiacModuleProxyFactoryContract,
-    fractalAzoriusMasterCopyContract
+    fractalAzoriusMasterCopyContract,
+    fractalRegistryContract,
+    keyValuePairContract
   );
 
   const txs = [safeTx];
-  const internalTxs = [];
+  const internalTxs = [
+    azoriusTxBuilder.buildUpdateDAONameTx(),
+    azoriusTxBuilder.buildUpdateDAOSnapshotURLTx(),
+    azoriusTxBuilder.buildLinearVotingContractSetupTx(),
+    azoriusTxBuilder.buildEnableAzoriusModuleTx(),
+    azoriusTxBuilder.buildAddAzoriusContractAsOwnerTx(),
+    azoriusTxBuilder.buildRemoveMultiSendOwnerTx(),
+  ];
 
-  // ?@todo snapshot url?
-  // @todo update daoName
-  // @todo linear 'setAzorius' tx
+  txs.push(azoriusTxBuilder.buildDeployAzoriusTx());
+  txs.push(
+    azoriusTxBuilder.buildExecInternalSafeTx(
+      azoriusTxBuilder.signatures(),
+      internalTxs
+    )
+  );
+  const encodedTx = encodeMultiSend(txs);
 }
 
 createDAO()

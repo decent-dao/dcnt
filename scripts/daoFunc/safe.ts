@@ -1,22 +1,23 @@
 import { SafeTransaction } from "./types";
 import { buildContractCall } from "./utils";
-import { BigNumber } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
 import {
   GnosisSafe__factory as GnosisSafeFactory,
   Azorius as IAzorius,
   ModuleProxyFactory as IModuleProxyFractory,
+  KeyValuePairs as IKeyValuePairs,
+  FractalRegistry as IFractalRegistry,
 } from "@fractal-framework/fractal-contracts";
 import ModuleProxyFactory, {
   abi as moduleProxyFractoryABI,
   address as moduleProxyFactoryAddress,
 } from "@fractal-framework/fractal-contracts/deployments/goerli/ModuleProxyFactory.json";
 import { getCreate2Address, solidityKeccak256 } from "ethers/lib/utils";
-import {
-  getProxyFactoryDeployment,
-  SingletonDeployment,
-} from "@safe-global/safe-deployments";
+import { getProxyFactoryDeployment } from "@safe-global/safe-deployments";
 import Azorius from "@fractal-framework/fractal-contracts/deployments/goerli/Azorius.json";
+import FractalRegistry from "@fractal-framework/fractal-contracts/deployments/goerli/FractalRegistry.json";
+import KeyValuePairs from "@fractal-framework/fractal-contracts/deployments/goerli/KeyValuePairs.json";
 const { AddressZero, HashZero } = ethers.constants;
 
 export const CHAIN_ID = 5;
@@ -25,6 +26,8 @@ export const SAFE_VERSION = "1.3.0";
 export const getMasterCopies = async (): Promise<{
   zodiacModuleProxyFactoryContract: IModuleProxyFractory;
   fractalAzoriusMasterCopyContract: IAzorius;
+  fractalRegistryContract: IFractalRegistry;
+  keyValuePairContract: IKeyValuePairs;
 }> => {
   const zodiacModuleProxyFactoryContract = (await ethers.getContractAt(
     ModuleProxyFactory.abi,
@@ -36,15 +39,25 @@ export const getMasterCopies = async (): Promise<{
     Azorius.abi,
     Azorius.address
   )) as IAzorius;
+  const fractalRegistryContract = (await ethers.getContractAt(
+    FractalRegistry.abi,
+    FractalRegistry.address
+  )) as IFractalRegistry;
+  const keyValuePairContract = (await ethers.getContractAt(
+    KeyValuePairs.abi,
+    KeyValuePairs.address
+  )) as IKeyValuePairs;
 
   return {
     zodiacModuleProxyFactoryContract,
     fractalAzoriusMasterCopyContract,
+    fractalRegistryContract,
+    keyValuePairContract,
   };
 };
 
 export const getSafeData = async (
-  multiSendContract: SingletonDeployment
+  multiSendContract: Contract
 ): Promise<[string, SafeTransaction]> => {
   const gnosisFactory = getProxyFactoryDeployment({
     version: SAFE_VERSION,

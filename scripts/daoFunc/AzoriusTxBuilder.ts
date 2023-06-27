@@ -1,10 +1,13 @@
+import { Contract } from "ethers";
 import { LockRelease } from "./../../typechain/LockRelease.d";
 import { DCNTToken } from "./../../typechain/DCNTToken.d";
 import { BaseTxBuilder } from "./BaseTxBuilder";
 import {
   Azorius,
   Azorius__factory as AzoriusFactory,
+  FractalRegistry,
   GnosisSafe,
+  KeyValuePairs,
   ModuleProxyFactory as ModuleProxyFractory,
 } from "@fractal-framework/fractal-contracts";
 import {
@@ -20,7 +23,6 @@ import {
   generateContractByteCodeLinear,
   generateSalt,
 } from "./utils";
-import { SingletonDeployment } from "@safe-global/safe-deployments";
 
 export class AzoriusTxBuilder extends BaseTxBuilder {
   private encodedSetupAzoriusData: string | undefined;
@@ -29,16 +31,17 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
 
   public azoriusContract: Azorius | undefined;
 
-  private strategyNonce: string;
   private azoriusNonce: string;
 
   constructor(
     predictedSafeContract: GnosisSafe,
     dcntTokenContract: DCNTToken,
     lockReleaseContract: LockRelease,
-    multiSendContract: SingletonDeployment,
+    multiSendContract: Contract,
     zodiacModuleProxyFactoryContract: ModuleProxyFractory,
-    fractalAzoriusMasterCopyContract: Azorius
+    fractalAzoriusMasterCopyContract: Azorius,
+    fractalRegistryContract: FractalRegistry,
+    keyValuePairsContract: KeyValuePairs
   ) {
     super(
       predictedSafeContract,
@@ -46,14 +49,11 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
       lockReleaseContract,
       multiSendContract,
       zodiacModuleProxyFactoryContract,
-      fractalAzoriusMasterCopyContract
+      fractalAzoriusMasterCopyContract,
+      fractalRegistryContract,
+      keyValuePairsContract
     );
-    this.strategyNonce = getRandomBytes();
     this.azoriusNonce = getRandomBytes();
-
-    this.setEncodedSetupTokenData();
-    this.setPredictedTokenAddress();
-
     this.setPredictedAzoriusAddress();
     this.setContracts();
   }
@@ -145,14 +145,6 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
       "01"
     );
   };
-
-  private setEncodedSetupTokenData() {
-    // TODO: update to DCNT token contract
-  }
-
-  private setPredictedTokenAddress() {
-    // TODO: update to DCNT token contract
-  }
 
   private setPredictedAzoriusAddress() {
     const encodedInitAzoriusData = defaultAbiCoder.encode(
