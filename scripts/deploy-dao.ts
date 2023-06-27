@@ -26,13 +26,24 @@ async function createDAO() {
     singletonContract.defaultAddress
   );
 
+  console.log("Multisend contract fetched");
+  console.table({
+    multisendContract: multisendContract.address,
+  });
+
   const [predictedGnosisSafeAddress, safeTx] = await getSafeData(
     multisendContract
   );
+
   const predictedSafeContract = (await ethers.getContractAt(
     GnosisSafeFactory.abi,
     predictedGnosisSafeAddress
   )) as GnosisSafe;
+
+  console.log("Safe contract fetched");
+  console.table({
+    predictedSafeContract: predictedSafeContract.address,
+  });
 
   const {
     zodiacModuleProxyFactoryContract,
@@ -41,11 +52,27 @@ async function createDAO() {
     keyValuePairContract,
     linearVotingMasterCopyContract,
   } = await getMasterCopies();
+
+  console.log("Master copies fetched");
+  console.table({
+    zodiacModuleProxyFactoryContract: zodiacModuleProxyFactoryContract.address,
+    fractalAzoriusMasterCopyContract: fractalAzoriusMasterCopyContract.address,
+    fractalRegistryContract: fractalRegistryContract.address,
+    keyValuePairContract: keyValuePairContract.address,
+    linearVotingMasterCopyContract: linearVotingMasterCopyContract.address,
+  });
+
   const [deployer] = await ethers.getSigners();
   const { dcntTokenContract, lockReleaseContract } = await deployDecentToken(
     deployer
   );
+
   console.log("Decent token deployed");
+  console.table({
+    dcntTokenContract: dcntTokenContract.address,
+    lockReleaseContract: lockReleaseContract.address,
+  });
+
   const azoriusTxBuilder = new AzoriusTxBuilder(
     deployer,
     predictedSafeContract,
@@ -59,6 +86,7 @@ async function createDAO() {
     linearVotingMasterCopyContract
   );
   console.log("Azorius tx builder created");
+
   const txs = [safeTx];
   const internalTxs = [
     azoriusTxBuilder.buildUpdateDAONameTx(),
@@ -78,15 +106,12 @@ async function createDAO() {
     )
   );
   console.log("Tx created");
-  const encodedTx = encodeMultiSend(txs);
-  const tx = {
-    to: multisendContract.address,
-    data: encodedTx,
-    gasLimit: 5000000,
-  };
 
-  const execution = await deployer.sendTransaction(tx);
+  const encodedTx = encodeMultiSend(txs);
+
+  const execution = await multisendContract.multiSend(encodedTx);
   execution.wait();
+  console.log("Tx sent", execution.hash);
   console.log("DAO created", predictedSafeContract.address);
 }
 

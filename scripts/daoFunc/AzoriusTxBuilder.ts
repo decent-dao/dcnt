@@ -261,7 +261,11 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
       throw new Error("Azorius address not set");
     if (!this.predictedStrategyAddress)
       throw new Error("Strategy address not set");
-
+    console.log("Contracts set");
+    console.table({
+      azorius: this.predictedAzoriusAddress,
+      strategy: this.predictedStrategyAddress,
+    });
     this.azoriusContract = this.fractalAzoriusMasterCopyContract.attach(
       this.predictedAzoriusAddress
     );

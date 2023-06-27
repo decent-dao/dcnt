@@ -42,6 +42,7 @@ export const getMasterCopies = async (): Promise<{
     Azorius.abi,
     Azorius.address
   )) as IAzorius;
+
   const linearVotingMasterCopyContract = (await ethers.getContractAt(
     LinearERC20Voting.abi,
     LinearERC20Voting.address
@@ -51,6 +52,7 @@ export const getMasterCopies = async (): Promise<{
     FractalRegistry.abi,
     FractalRegistry.address
   )) as IFractalRegistry;
+
   const keyValuePairContract = (await ethers.getContractAt(
     KeyValuePairs.abi,
     KeyValuePairs.address

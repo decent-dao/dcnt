@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Contract, ethers, BigNumber, utils } from "ethers";
-
+import crypto from "crypto";
 import { SafeTransaction, MetaTransaction } from "./types";
 
 // Prefix and postfix strings come from Zodiac contracts
 import { ModuleProxyFactory } from "@fractal-framework/fractal-contracts";
 import { getCreate2Address, solidityKeccak256 } from "ethers/lib/utils";
+
 const { AddressZero } = ethers.constants;
 
 export const buildContractCall = (
@@ -44,7 +45,7 @@ export const buildSafeTransaction = (template: {
 }): SafeTransaction => {
   return {
     to: template.to,
-    value: template.value || 0,
+    value: template.value?.toString() || 0,
     data: template.data || "0x",
     operation: template.operation || 0,
     safeTxGas: template.safeTxGas || 0,
@@ -86,10 +87,8 @@ export const buildMultiSendSafeTx = (
 };
 
 export function getRandomBytes(): string {
-  const bytes8Array = new Uint8Array(32);
-  const bytes32 =
-    "0x" +
-    bytes8Array.reduce((o, v) => o + ("00" + v.toString(16)).slice(-2), "");
+  const randomBytes = crypto.randomBytes(32);
+  const bytes32 = "0x" + randomBytes.toString("hex");
   return bytes32;
 }
 
