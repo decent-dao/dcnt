@@ -1,5 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Contract } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import { LockRelease } from "./../../typechain/LockRelease.d";
 import { DCNTToken } from "./../../typechain/DCNTToken.d";
 import { BaseTxBuilder } from "./BaseTxBuilder";
@@ -61,8 +61,8 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
       keyValuePairsContract,
       linearVotingMasterCopyContract
     );
-    this.azoriusNonce = getRandomBytes();
     this.strategyNonce = getRandomBytes();
+    this.azoriusNonce = getRandomBytes();
 
     this.setPredictedStrategyAddress();
     this.setPredictedAzoriusAddress();
@@ -90,6 +90,7 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
     if (!this.linearVotingContract)
       throw new Error("lockReleaseContract contract not set");
     if (!this.azoriusContract) throw new Error("Azorius contract not set");
+
     return buildContractCall(
       this.linearVotingContract,
       "setAzorius", // contract function name
@@ -173,6 +174,14 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
   }
 
   private setPredictedStrategyAddress() {
+    console.log("Setting predicted strategy address");
+    console.table({
+      salt: this.strategyNonce,
+      masterCopy: this.linearVotingMasterCopyContract.address,
+      safeAddress: this.predictedSafeContract.address,
+      proxyFactory: this.zodiacModuleProxyFactoryContract.address,
+      lockRelease: this.lockReleaseContract.address,
+    });
     const encodedStrategyInitParams = defaultAbiCoder.encode(
       [
         "address",
@@ -185,12 +194,12 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
       ],
       [
         this.predictedSafeContract.address, // owner
-        this.lockReleaseContract.address, // governance token
+        this.lockReleaseContract.address, // governance
         "0x0000000000000000000000000000000000000001", // Azorius module
-        50, // voting period (blocks)
+        BigNumber.from(50), // voting period (blocks)
         0, // proposer weight, how much is needed to create a proposal.
-        4, // quorom numerator, denominator is 1,000,000, so quorum percentage is 50%
-        500000, // basis numerator, denominator is 1,000,000, so basis percentage is 50% (simple majority)
+        BigNumber.from(4), // quorom numerator, denominator is 1,000,000, so quorum percentage is 50%
+        BigNumber.from(500000), // basis numerator, denominator is 1,000,000, so basis percentage is 50% (simple majority)
       ]
     );
 
@@ -261,11 +270,13 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
       throw new Error("Azorius address not set");
     if (!this.predictedStrategyAddress)
       throw new Error("Strategy address not set");
+
     console.log("Contracts set");
     console.table({
       azorius: this.predictedAzoriusAddress,
       strategy: this.predictedStrategyAddress,
     });
+
     this.azoriusContract = this.fractalAzoriusMasterCopyContract.attach(
       this.predictedAzoriusAddress
     );

@@ -86,6 +86,7 @@ async function createDAO() {
     linearVotingMasterCopyContract
   );
   console.log("Azorius tx builder created");
+  // @todo initial supply -> dao
 
   const txs = [safeTx];
   const internalTxs = [
@@ -98,6 +99,7 @@ async function createDAO() {
   ];
   console.log("Internal txs created");
 
+  txs.push(azoriusTxBuilder.buildDeployStrategyTx());
   txs.push(azoriusTxBuilder.buildDeployAzoriusTx());
   txs.push(
     azoriusTxBuilder.buildExecInternalSafeTx(
@@ -109,7 +111,9 @@ async function createDAO() {
 
   const encodedTx = encodeMultiSend(txs);
 
-  const execution = await multisendContract.multiSend(encodedTx);
+  const execution = await multisendContract.multiSend(encodedTx, {
+    gasLimit: 5000000,
+  });
   execution.wait();
   console.log("Tx sent", execution.hash);
   console.log("DAO created", predictedSafeContract.address);

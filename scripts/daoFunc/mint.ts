@@ -51,10 +51,10 @@ export const deployDecentToken = async (
   // Make sure enough time has passed before minting new tokens
   await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
   console.log("1 minute has passed");
-  // Mint and fund the lock contract with the locked token amounts
-  await token.mint(lockRelease.address, totalLockedAmount, {
-    gasLimit: 1000000,
-  });
+
+  await token
+    .transfer(lockRelease.address, totalLockedAmount)
+    .catch((e) => console.error(e));
   console.log(
     `Minted and transferred ${totalLockedAmount} tokens to LockRelease contract`
   );
