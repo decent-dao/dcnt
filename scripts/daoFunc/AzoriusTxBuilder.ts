@@ -1,10 +1,11 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract } from "ethers";
 import { LockRelease } from "./../../typechain/LockRelease.d";
 import { DCNTToken } from "./../../typechain/DCNTToken.d";
 import { BaseTxBuilder } from "./BaseTxBuilder";
 import {
   Azorius,
-  Azorius__factory as AzoriusFactory,
+  LinearERC20Voting,
   FractalRegistry,
   GnosisSafe,
   KeyValuePairs,
@@ -26,14 +27,19 @@ import {
 
 export class AzoriusTxBuilder extends BaseTxBuilder {
   private encodedSetupAzoriusData: string | undefined;
+  private encodedStrategySetupData: string | undefined;
 
+  private predictedStrategyAddress: string | undefined;
   private predictedAzoriusAddress: string | undefined;
 
+  public linearVotingContract: LinearERC20Voting | undefined;
   public azoriusContract: Azorius | undefined;
 
   private azoriusNonce: string;
+  private strategyNonce: string;
 
   constructor(
+    deployer: SignerWithAddress,
     predictedSafeContract: GnosisSafe,
     dcntTokenContract: DCNTToken,
     lockReleaseContract: LockRelease,
@@ -41,7 +47,8 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
     zodiacModuleProxyFactoryContract: ModuleProxyFractory,
     fractalAzoriusMasterCopyContract: Azorius,
     fractalRegistryContract: FractalRegistry,
-    keyValuePairsContract: KeyValuePairs
+    keyValuePairsContract: KeyValuePairs,
+    linearVotingMasterCopyContract: LinearERC20Voting
   ) {
     super(
       predictedSafeContract,
@@ -51,10 +58,15 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
       zodiacModuleProxyFactoryContract,
       fractalAzoriusMasterCopyContract,
       fractalRegistryContract,
-      keyValuePairsContract
+      keyValuePairsContract,
+      linearVotingMasterCopyContract
     );
     this.azoriusNonce = getRandomBytes();
+    this.strategyNonce = getRandomBytes();
+
+    this.setPredictedStrategyAddress();
     this.setPredictedAzoriusAddress();
+
     this.setContracts();
   }
 
@@ -75,11 +87,11 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
   }
 
   public buildLinearVotingContractSetupTx(): SafeTransaction {
-    if (!this.lockReleaseContract)
+    if (!this.linearVotingContract)
       throw new Error("lockReleaseContract contract not set");
     if (!this.azoriusContract) throw new Error("Azorius contract not set");
     return buildContractCall(
-      this.lockReleaseContract,
+      this.linearVotingContract,
       "setAzorius", // contract function name
       [this.azoriusContract.address],
       0,
@@ -146,6 +158,69 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
     );
   };
 
+  public buildDeployStrategyTx(): SafeTransaction {
+    return buildContractCall(
+      this.zodiacModuleProxyFactoryContract,
+      "deployModule",
+      [
+        this.linearVotingMasterCopyContract.address,
+        this.encodedStrategySetupData,
+        this.strategyNonce,
+      ],
+      0,
+      false
+    );
+  }
+
+  private setPredictedStrategyAddress() {
+    const encodedStrategyInitParams = defaultAbiCoder.encode(
+      [
+        "address",
+        "address",
+        "address",
+        "uint32",
+        "uint256",
+        "uint256",
+        "uint256",
+      ],
+      [
+        this.predictedSafeContract.address, // owner
+        this.lockReleaseContract.address, // governance token
+        "0x0000000000000000000000000000000000000001", // Azorius module
+        50, // voting period (blocks)
+        0, // proposer weight, how much is needed to create a proposal.
+        4, // quorom numerator, denominator is 1,000,000, so quorum percentage is 50%
+        500000, // basis numerator, denominator is 1,000,000, so basis percentage is 50% (simple majority)
+      ]
+    );
+
+    const encodedStrategySetupData =
+      this.linearVotingMasterCopyContract.interface.encodeFunctionData(
+        "setUp",
+        [encodedStrategyInitParams]
+      );
+
+    const strategyByteCodeLinear = generateContractByteCodeLinear(
+      this.linearVotingMasterCopyContract.address.slice(2)
+    );
+
+    const strategySalt = solidityKeccak256(
+      ["bytes32", "uint256"],
+      [
+        solidityKeccak256(["bytes"], [encodedStrategySetupData]),
+        this.strategyNonce,
+      ]
+    );
+
+    this.encodedStrategySetupData = encodedStrategySetupData;
+
+    this.predictedStrategyAddress = getCreate2Address(
+      this.zodiacModuleProxyFactoryContract.address,
+      strategySalt,
+      solidityKeccak256(["bytes"], [strategyByteCodeLinear])
+    );
+  }
+
   private setPredictedAzoriusAddress() {
     const encodedInitAzoriusData = defaultAbiCoder.encode(
       ["address", "address", "address", "address[]", "uint32", "uint32"],
@@ -153,7 +228,7 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
         this.predictedSafeContract.address,
         this.predictedSafeContract.address,
         this.predictedSafeContract.address,
-        [this.lockReleaseContract.address],
+        [this.predictedStrategyAddress],
         0, // timelock period in blocks
         0, // execution period in blocks
       ]
@@ -182,13 +257,16 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
   }
 
   private setContracts() {
-    if (!this.frame) throw new Error("Frame not set");
     if (!this.predictedAzoriusAddress)
       throw new Error("Azorius address not set");
+    if (!this.predictedStrategyAddress)
+      throw new Error("Strategy address not set");
 
-    this.azoriusContract = AzoriusFactory.connect(
-      this.predictedAzoriusAddress,
-      this.frame
+    this.azoriusContract = this.fractalAzoriusMasterCopyContract.attach(
+      this.predictedAzoriusAddress
+    );
+    this.linearVotingContract = this.linearVotingMasterCopyContract.attach(
+      this.predictedStrategyAddress
     );
   }
 }

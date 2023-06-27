@@ -2,7 +2,6 @@
 import { buildContractCall, encodeMultiSend } from "./utils";
 import { LockRelease } from "./../../typechain/LockRelease.d";
 import { DCNTToken } from "./../../typechain/DCNTToken.d";
-import { ethProvider } from "eth-provider";
 import { constants, Contract } from "ethers";
 import {
   KeyValuePairs,
@@ -10,6 +9,7 @@ import {
   Azorius as IAzorius,
   GnosisSafe,
   ModuleProxyFactory as IModuleProxyFractory,
+  LinearERC20Voting,
 } from "@fractal-framework/fractal-contracts";
 import { MetaTransaction, SafeTransaction } from "./types";
 
@@ -23,8 +23,8 @@ export class BaseTxBuilder {
   readonly lockReleaseContract: LockRelease;
   readonly fractalRegistryContract: FractalRegistry;
   readonly keyValuePairsContract: KeyValuePairs;
+  readonly linearVotingMasterCopyContract: LinearERC20Voting;
 
-  readonly frame: any;
   constructor(
     predictedSafeContract: GnosisSafe,
     dcntTokenContract: DCNTToken,
@@ -33,7 +33,8 @@ export class BaseTxBuilder {
     zodiacModuleProxyFactoryContract: IModuleProxyFractory,
     fractalAzoriusMasterCopyContract: IAzorius,
     fractalRegistryContract: FractalRegistry,
-    keyValuePairsContract: KeyValuePairs
+    keyValuePairsContract: KeyValuePairs,
+    linearVotingMasterCopyContract: LinearERC20Voting
   ) {
     this.predictedSafeContract = predictedSafeContract;
     this.dcntTokenContract = dcntTokenContract;
@@ -43,7 +44,7 @@ export class BaseTxBuilder {
     this.fractalAzoriusMasterCopyContract = fractalAzoriusMasterCopyContract;
     this.fractalRegistryContract = fractalRegistryContract;
     this.keyValuePairsContract = keyValuePairsContract;
-    this.frame = ethProvider("frame");
+    this.linearVotingMasterCopyContract = linearVotingMasterCopyContract;
   }
 
   buildUpdateDAONameTx(): SafeTransaction {
