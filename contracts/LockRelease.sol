@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {ILockRelease} from "./ILockRelease.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Votes, IERC5805, EIP712} from "@openzeppelin/contracts/governance/utils/Votes.sol";
 
@@ -216,5 +217,25 @@ contract LockRelease is ILockRelease, Votes {
         address _account
     ) internal view override returns (uint256) {
         return schedules[_account].total - schedules[_account].released;
+    }
+
+    function balanceOf(address _account) public view returns (uint256) {
+        return ERC20(token).balanceOf(_account);
+    }
+
+    function name() public view returns (string memory) {
+        return ERC20(token).name();
+    }
+
+    function symbol() public view returns (string memory) {
+        return ERC20(token).symbol();
+    }
+
+    function decimals() public view returns (uint8) {
+        return ERC20(token).decimals();
+    } 
+
+    function totalSupply() public view returns (uint256) {
+        return ERC20(token).totalSupply();
     }
 }
