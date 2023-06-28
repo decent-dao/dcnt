@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SafeTransaction } from "./types";
 import { buildContractCall, getRandomBytes } from "./utils";
 import { Contract } from "ethers";
@@ -12,20 +13,45 @@ import {
   GnosisSafe,
   GnosisSafeProxyFactory,
 } from "@fractal-framework/fractal-contracts";
-import ModuleProxyFactory from "@fractal-framework/fractal-contracts/deployments/goerli/ModuleProxyFactory.json";
 import { getCreate2Address, solidityKeccak256 } from "ethers/lib/utils";
 import {
   getMultiSendCallOnlyDeployment,
   getProxyFactoryDeployment,
   getSafeSingletonDeployment,
 } from "@safe-global/safe-deployments";
-import Azorius from "@fractal-framework/fractal-contracts/deployments/goerli/Azorius.json";
-import FractalRegistry from "@fractal-framework/fractal-contracts/deployments/goerli/FractalRegistry.json";
-import KeyValuePairs from "@fractal-framework/fractal-contracts/deployments/goerli/KeyValuePairs.json";
-import LinearERC20Voting from "@fractal-framework/fractal-contracts/deployments/goerli/LinearERC20Voting.json";
 const { AddressZero, HashZero } = ethers.constants;
+
 export const CHAIN_ID = 5;
 export const SAFE_VERSION = "1.3.0";
+
+/* eslint-disable node/no-unsupported-features/es-syntax */
+async function getFractalContractAddressByChainId(_chainId: number) {
+  const networkPath = _chainId === 1 ? "mainnet" : "goerli";
+
+  const Azorius = await import(
+    `@fractal-framework/fractal-contracts/deployments/${networkPath}/Azorius.json`
+  );
+  const FractalRegistry = await import(
+    `@fractal-framework/fractal-contracts/deployments/${networkPath}/FractalRegistry.json`
+  );
+  const KeyValuePairs = await import(
+    `@fractal-framework/fractal-contracts/deployments/${networkPath}/KeyValuePairs.json`
+  );
+  const LinearERC20Voting = await import(
+    `@fractal-framework/fractal-contracts/deployments/${networkPath}/LinearERC20Voting.json`
+  );
+  const ModuleProxyFactory = await import(
+    `@fractal-framework/fractal-contracts/deployments/${networkPath}/ModuleProxyFactory.json`
+  );
+  return {
+    Azorius,
+    FractalRegistry,
+    KeyValuePairs,
+    LinearERC20Voting,
+    ModuleProxyFactory,
+  };
+}
+/* eslint-enable node/no-unsupported-features/es-syntax */
 
 export const getMasterCopies = async (): Promise<{
   zodiacModuleProxyFactoryContract: IModuleProxyFractory;
@@ -35,8 +61,16 @@ export const getMasterCopies = async (): Promise<{
   keyValuePairContract: IKeyValuePairs;
   multisendContract: Contract;
 }> => {
+  const {
+    Azorius,
+    FractalRegistry,
+    KeyValuePairs,
+    LinearERC20Voting,
+    ModuleProxyFactory,
+  } = await getFractalContractAddressByChainId(CHAIN_ID);
+
   const zodiacModuleProxyFactoryContract = (await ethers.getContractAt(
-    ModuleProxyFactory.abi,
+    ModuleProxyFactory.abi as Record<string, any>[],
     ModuleProxyFactory.address
   )) as IModuleProxyFractory;
 
@@ -51,12 +85,12 @@ export const getMasterCopies = async (): Promise<{
   )) as ILinearERC20Voting;
 
   const fractalRegistryContract = (await ethers.getContractAt(
-    FractalRegistry.abi,
+    FractalRegistry.abi as Record<string, any>[],
     FractalRegistry.address
   )) as IFractalRegistry;
 
   const keyValuePairContract = (await ethers.getContractAt(
-    KeyValuePairs.abi,
+    KeyValuePairs.abi as Record<string, any>[],
     KeyValuePairs.address
   )) as IKeyValuePairs;
 
