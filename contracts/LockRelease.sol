@@ -140,6 +140,15 @@ contract LockRelease is ILockRelease, Votes {
         return schedules[_beneficiary].total;
     }
 
+    /** Returns the total tokens yet to be released to the beneficiary over the total duration.
+     *
+     * @param _beneficiary address of the beneficiary
+     * @return uint256 total tokens yet to be released to the beneficiary
+     */
+    function getPending(address _beneficiary) external view returns (uint256) {
+        return schedules[_beneficiary].total - schedules[_beneficiary].released;
+    }
+
     /** Returns the total tokens already released to the beneficiary.
      *
      * @param _beneficiary address of the beneficiary
@@ -173,15 +182,6 @@ contract LockRelease is ILockRelease, Votes {
      */
     function getReleasable(address _beneficiary) public view returns (uint256) {
         return getTotalMatured(_beneficiary) - getReleased(_beneficiary);
-    }
-
-    /** Returns the total tokens yet to be released to the beneficiary over the total duration.
-     *
-     * @param _beneficiary address of the beneficiary
-     * @return uint256 total tokens yet to be released to the beneficiary
-     */
-    function getPending(address _beneficiary) external view returns (uint256) {
-        return schedules[_beneficiary].total - schedules[_beneficiary].released;
     }
 
     /** Returns the current amount of votes that the account has.
