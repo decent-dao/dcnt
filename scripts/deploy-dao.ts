@@ -44,7 +44,7 @@ async function createDAO() {
   });
 
   const azoriusTxBuilder = new AzoriusTxBuilder(
-    deployer,
+    decentDAOConfig,
     predictedSafeContract,
     dcntTokenContract,
     lockReleaseContract,

@@ -1,4 +1,3 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract } from "ethers";
 import { BaseTxBuilder } from "./BaseTxBuilder";
 import {
@@ -14,7 +13,7 @@ import {
   getCreate2Address,
   solidityKeccak256,
 } from "ethers/lib/utils";
-import { SafeTransaction } from "./types";
+import { DecentDAOConfig, SafeTransaction } from "./types";
 
 import {
   getRandomBytes,
@@ -22,7 +21,6 @@ import {
   generateContractByteCodeLinear,
   generateSalt,
 } from "./utils";
-import { decentDAOConfig } from "./dcntDAOConfig";
 import { DCNTToken, LockRelease } from "../typechain";
 
 export class AzoriusTxBuilder extends BaseTxBuilder {
@@ -39,7 +37,7 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
   private strategyNonce: string;
 
   constructor(
-    private deployer: SignerWithAddress,
+    private decentDAOConfig: DecentDAOConfig,
     predictedSafeContract: GnosisSafe,
     dcntTokenContract: DCNTToken,
     lockReleaseContract: LockRelease,
@@ -196,10 +194,10 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
         this.predictedSafeContract.address, // owner
         this.lockReleaseContract.address, // governance
         "0x0000000000000000000000000000000000000001", // Azorius module
-        decentDAOConfig.votingPeriod, // voting period (blocks)
-        decentDAOConfig.proposalRequiredWeight, // proposer weight, how much is needed to create a proposal.
-        decentDAOConfig.quorum, // quorom numerator, denominator is 1,000,000, so quorum percentage is 50%
-        decentDAOConfig.votingBasis, // basis numerator, denominator is 1,000,000, so basis percentage is 50% (simple majority)
+        this.decentDAOConfig.votingPeriod, // voting period (blocks)
+        this.decentDAOConfig.proposalRequiredWeight, // proposer weight, how much is needed to create a proposal.
+        this.decentDAOConfig.quorum, // quorom numerator, denominator is 1,000,000, so quorum percentage is 50%
+        this.decentDAOConfig.votingBasis, // basis numerator, denominator is 1,000,000, so basis percentage is 50% (simple majority)
       ]
     );
 
@@ -238,8 +236,8 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
         this.predictedSafeContract.address,
         this.predictedSafeContract.address,
         [this.predictedStrategyAddress],
-        decentDAOConfig.timeLockPeriod, // timelock period in blocks
-        decentDAOConfig.executionPeriod, // execution period in blocks
+        this.decentDAOConfig.timeLockPeriod, // timelock period in blocks
+        this.decentDAOConfig.executionPeriod, // execution period in blocks
       ]
     );
 
