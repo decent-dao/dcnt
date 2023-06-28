@@ -5,22 +5,6 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { DCNTToken, LockRelease } from "../typechain";
 
-export const retryCall = async (
-  fn: () => Promise<any>,
-  retriesLeft = 5,
-  interval = 1000
-): Promise<any> => {
-  try {
-    return await fn();
-  } catch (error) {
-    if (retriesLeft) {
-      await new Promise((resolve) => setTimeout(resolve, interval));
-      return retryCall(fn, retriesLeft - 1, interval);
-    }
-    throw new Error(error as string);
-  }
-};
-
 export const deployDecentToken = async (
   deployer: SignerWithAddress,
   decentDAOConfig: DecentDAOConfig
