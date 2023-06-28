@@ -110,13 +110,10 @@ O)))))      O))))      O)))  O))))   O)))  O))   O))        O)))))    O))       
   tokenTransfer.wait();
 
   console.log("Tokens transfered");
-  console.table(
-    {
-      amountToTransfer: amountToTransfer,
-      hash: tokenTransfer.hash,
-    },
-    ["amountToTransfer", "hash"]
-  );
+  console.table({
+    amountToTransfer: amountToTransfer,
+    hash: tokenTransfer.hash,
+  });
 
   console.log("Transfering token ownership to Decent DAO");
   const transferTokenOwnership = await dcntTokenContract.transferOwnership(
