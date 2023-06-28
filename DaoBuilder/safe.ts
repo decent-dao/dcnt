@@ -15,6 +15,7 @@ import {
 import ModuleProxyFactory from "@fractal-framework/fractal-contracts/deployments/goerli/ModuleProxyFactory.json";
 import { getCreate2Address, solidityKeccak256 } from "ethers/lib/utils";
 import {
+  getMultiSendCallOnlyDeployment,
   getProxyFactoryDeployment,
   getSafeSingletonDeployment,
 } from "@safe-global/safe-deployments";
@@ -32,6 +33,7 @@ export const getMasterCopies = async (): Promise<{
   fractalRegistryContract: IFractalRegistry;
   linearVotingMasterCopyContract: ILinearERC20Voting;
   keyValuePairContract: IKeyValuePairs;
+  multisendContract: Contract;
 }> => {
   const zodiacModuleProxyFactoryContract = (await ethers.getContractAt(
     ModuleProxyFactory.abi,
@@ -58,7 +60,20 @@ export const getMasterCopies = async (): Promise<{
     KeyValuePairs.address
   )) as IKeyValuePairs;
 
+  const multisendSingletonDeployment = getMultiSendCallOnlyDeployment({
+    version: SAFE_VERSION,
+    network: CHAIN_ID.toString(),
+  });
+  if (!multisendSingletonDeployment)
+    throw new Error("Multisend contract not found");
+
+  const multisendContract = await ethers.getContractAt(
+    multisendSingletonDeployment.abi,
+    multisendSingletonDeployment.defaultAddress
+  );
+
   return {
+    multisendContract,
     zodiacModuleProxyFactoryContract,
     fractalAzoriusMasterCopyContract,
     fractalRegistryContract,
@@ -69,7 +84,10 @@ export const getMasterCopies = async (): Promise<{
 
 export const getSafeData = async (
   multiSendContract: Contract
-): Promise<[string, SafeTransaction]> => {
+): Promise<{
+  predictedSafeContract: GnosisSafe;
+  createSafeTx: SafeTransaction;
+}> => {
   const gnosisFactory = getProxyFactoryDeployment({
     version: SAFE_VERSION,
     network: CHAIN_ID.toString(),
@@ -95,12 +113,13 @@ export const getSafeData = async (
     gnosisSingleton.defaultAddress
   )) as GnosisSafe;
 
+  // multisend contract is the only signer; this is removed later
   const signers = [multiSendContract.address];
 
   const createGnosisCalldata =
     gnosisSafeSingletonContract.interface.encodeFunctionData("setup", [
       signers,
-      1, // Threshold
+      1, // threshold
       AddressZero,
       HashZero,
       AddressZero,
@@ -132,5 +151,9 @@ export const getSafeData = async (
     false
   );
 
-  return [predictedGnosisSafeAddress, createSafeTx];
+  const predictedSafeContract = gnosisSafeSingletonContract.attach(
+    predictedGnosisSafeAddress
+  );
+
+  return { predictedSafeContract, createSafeTx };
 };
