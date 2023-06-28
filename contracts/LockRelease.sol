@@ -18,9 +18,9 @@ contract LockRelease is ILockRelease, Votes {
         uint256 released; // already released tokens to the beneficiary
     }
 
-    address public token; // address of the token being released
-    uint128 public start; // start timestamp of the release schedule
-    uint128 public duration; // duration of the release schedule in seconds
+    address public immutable token; // address of the token being released
+    uint128 public immutable start; // start timestamp of the release schedule
+    uint128 public immutable duration; // duration of the release schedule in seconds
 
     address[] private beneficiaries; // list of beneficiaries
 
