@@ -1,7 +1,7 @@
 import { AzoriusTxBuilder } from "../DaoBuilder/AzoriusTxBuilder";
 import { ethers } from "hardhat";
 
-import { getMasterCopies, getSafeData } from "../DaoBuilder/safe";
+import { getMasterCopies, getSafeData } from "../DaoBuilder/daoUtils";
 import { deployDecentToken } from "../DaoBuilder/dcntTokenDeploy";
 import { encodeMultiSend } from "../DaoBuilder/utils";
 import { decentDAOConfig } from "../DaoBuilder/dcntDAOConfig";
