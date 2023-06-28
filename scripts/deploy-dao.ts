@@ -88,7 +88,16 @@ async function createDAO() {
   execution.wait();
   console.timeEnd(`tx executed ${execution.hash}`);
 
-  console.log("DAO created", predictedSafeContract.address);
+  console.log(`
+O)))))                                          O))         O)))))          O)           O))))                O))                                O))                 O))
+O))   O))                                       O))         O))   O))      O) ))       O))    O))          O))   O))                             O))                 O))
+O))    O))   O))       O)))   O))    O)) O))  O)O) O)       O))    O))    O)  O))    O))        O))       O))       O) O)))   O))       O))    O)O) O)   O))         O))
+O))    O)) O)   O))  O))    O)   O))  O))  O))  O))         O))    O))   O))   O))   O))        O))       O))        O))    O)   O))  O))  O))   O))   O)   O))  O)) O))
+O))    O))O))))) O))O))    O))))) O)) O))  O))  O))         O))    O))  O)))))) O))  O))        O))       O))        O))   O))))) O))O))   O))   O))  O))))) O))O)   O))
+O))   O)) O)         O))   O)         O))  O))  O))         O))   O))  O))       O))   O))     O))         O))   O)) O))   O)        O))   O))   O))  O)        O)   O))
+O)))))      O))))      O)))  O))))   O)))  O))   O))        O)))))    O))         O))    O))))               O))))  O)))     O))))     O)) O)))   O))   O))))    O)) O))
+  `);
+  console.table({ daoAddress: predictedSafeContract.address });
 
   console.log("Transfering remaining balance of DCNT to Decent DAO");
   const amountToTransfer = utils
@@ -101,10 +110,13 @@ async function createDAO() {
   tokenTransfer.wait();
 
   console.log("Tokens transfered");
-  console.table({
-    amountToTransfer: amountToTransfer,
-    hash: tokenTransfer.hash,
-  });
+  console.table(
+    {
+      amountToTransfer: amountToTransfer,
+      hash: tokenTransfer.hash,
+    },
+    ["amountToTransfer", "hash"]
+  );
 
   console.log("Transfering token ownership to Decent DAO");
   const transferTokenOwnership = await dcntTokenContract.transferOwnership(
