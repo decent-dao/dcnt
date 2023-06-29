@@ -26,7 +26,7 @@ export const decentDAOConfig: DecentDAOConfig = {
   // Linear Strategy | Length of time that a successful proposal has to be executed, after which is will expire.  We can simply set this to the the same length decided on for Voting Period.
   executionPeriod: 86400, // (blocks)
   // Linear Strategy | Percentage of total possible tokens that must vote in order to consider a proposal result valid.  We should take into account that a large portion of tokens will be locked for investors, who may never vote.
-  quorum: 40000, // (basis points)
+  quorum: 4, // (basis points)
   // Linear Strategy | Percentage of total possible tokens that must vote YES in order to pass a proposal.  Suggested 50% for a simple majority.
   votingBasis: 500000, // (basis points)
   // Linear Strategy | Percentage of total possible tokens that must be delegated to a user in order for them to create a proposal.  Suggested 1%.
