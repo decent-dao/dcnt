@@ -37,7 +37,7 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
   private strategyNonce: string;
 
   constructor(
-    private decentDAOConfig: DecentDAOConfig,
+    decentDAOConfig: DecentDAOConfig,
     predictedSafeContract: GnosisSafe,
     dcntTokenContract: DCNTToken,
     lockReleaseContract: LockRelease,
@@ -57,7 +57,8 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
       fractalAzoriusMasterCopyContract,
       fractalRegistryContract,
       keyValuePairsContract,
-      linearVotingMasterCopyContract
+      linearVotingMasterCopyContract,
+      decentDAOConfig
     );
     this.strategyNonce = getRandomBytes();
     this.azoriusNonce = getRandomBytes();

@@ -2,6 +2,7 @@ import { DecentDAOConfig } from './../DaoBuilder/types';
 import { ethers } from "ethers";
 
 export const decentTestConfig: DecentDAOConfig = {
+  name: "Decent DAO",
   lockStart: Math.floor(Date.now() / 1000), // (Now) Start time of token lock
   lockDuration: 60, // 60 seconds
   snapshotURL: "https://snapshot.org/#/decentdao.eth",

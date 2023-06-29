@@ -218,24 +218,4 @@ contract LockRelease is ILockRelease, Votes {
     ) internal view override returns (uint256) {
         return schedules[_account].total - schedules[_account].released;
     }
-
-    function balanceOf(address _account) public view returns (uint256) {
-        return ERC20(token).balanceOf(_account);
-    }
-
-    function name() public view returns (string memory) {
-        return ERC20(token).name();
-    }
-
-    function symbol() public view returns (string memory) {
-        return ERC20(token).symbol();
-    }
-
-    function decimals() public view returns (uint8) {
-        return ERC20(token).decimals();
-    } 
-
-    function totalSupply() public view returns (uint256) {
-        return ERC20(token).totalSupply();
-    }
 }

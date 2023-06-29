@@ -9,7 +9,7 @@ import {
   ModuleProxyFactory as IModuleProxyFractory,
   LinearERC20Voting,
 } from "@fractal-framework/fractal-contracts";
-import { MetaTransaction, SafeTransaction } from "./types";
+import { DecentDAOConfig, MetaTransaction, SafeTransaction } from "./types";
 import { DCNTToken, LockRelease } from "../typechain";
 
 export class BaseTxBuilder {
@@ -23,6 +23,7 @@ export class BaseTxBuilder {
   readonly fractalRegistryContract: FractalRegistry;
   readonly keyValuePairsContract: KeyValuePairs;
   readonly linearVotingMasterCopyContract: LinearERC20Voting;
+  readonly decentDAOConfig: DecentDAOConfig;
 
   constructor(
     predictedSafeContract: GnosisSafe,
@@ -33,7 +34,8 @@ export class BaseTxBuilder {
     fractalAzoriusMasterCopyContract: IAzorius,
     fractalRegistryContract: FractalRegistry,
     keyValuePairsContract: KeyValuePairs,
-    linearVotingMasterCopyContract: LinearERC20Voting
+    linearVotingMasterCopyContract: LinearERC20Voting,
+    decentDAOConfig: DecentDAOConfig
   ) {
     this.predictedSafeContract = predictedSafeContract;
     this.dcntTokenContract = dcntTokenContract;
@@ -44,13 +46,14 @@ export class BaseTxBuilder {
     this.fractalRegistryContract = fractalRegistryContract;
     this.keyValuePairsContract = keyValuePairsContract;
     this.linearVotingMasterCopyContract = linearVotingMasterCopyContract;
+    this.decentDAOConfig = decentDAOConfig;
   }
 
   buildUpdateDAONameTx(): SafeTransaction {
     return buildContractCall(
       this.fractalRegistryContract,
       "updateDAOName",
-      ["Decent DAO"],
+      [this.decentDAOConfig.name],
       0,
       false
     );
@@ -60,7 +63,7 @@ export class BaseTxBuilder {
     return buildContractCall(
       this.keyValuePairsContract,
       "updateValues",
-      [["snapshotURL"], ""], // @todo update
+      [["snapshotURL"], this.decentDAOConfig.snapshotURL], // @todo update
       0,
       false
     );

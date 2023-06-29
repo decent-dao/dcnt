@@ -22,6 +22,7 @@ export interface SafeSignature {
 }
 
 export interface DecentDAOConfig {
+  name: string;
   lockStart: number;
   lockDuration: number;
   snapshotURL: string;
