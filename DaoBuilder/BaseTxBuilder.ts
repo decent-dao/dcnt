@@ -63,7 +63,7 @@ export class BaseTxBuilder {
     return buildContractCall(
       this.keyValuePairsContract,
       "updateValues",
-      [["snapshotURL"], this.decentDAOConfig.snapshotURL], // @todo update
+      [["snapshotURL"], [this.decentDAOConfig.snapshotURL]], // @todo update
       0,
       false
     );
