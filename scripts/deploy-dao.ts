@@ -61,7 +61,7 @@ async function createDAO() {
   const txs = [createSafeTx];
   const internalTxs = [
     azoriusTxBuilder.buildUpdateDAONameTx(),
-    // azoriusTxBuilder.buildUpdateDAOSnapshotURLTx(),
+    azoriusTxBuilder.buildUpdateDAOSnapshotURLTx(),
     azoriusTxBuilder.buildLinearVotingContractSetupTx(),
     azoriusTxBuilder.buildEnableAzoriusModuleTx(),
     azoriusTxBuilder.buildAddAzoriusContractAsOwnerTx(),
