@@ -1,49 +1,65 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { BigNumber } from "ethers";
+import { BigNumber, providers } from "ethers";
 import { ethers } from "hardhat";
 import { DCNTToken } from "../typechain";
 
 import time from "./time";
 
-describe("DCNTToken", async function () {
+describe("DCNTToken", async function() {
   let owner: SignerWithAddress;
   let nonOwner: SignerWithAddress;
   let dcnt: DCNTToken;
+  let deployedBlock: providers.Block;
 
   const mintWhole = 1_000_000_000;
   const mintTotal = ethers.utils.parseEther(mintWhole.toString());
 
-  beforeEach(async function () {
+  beforeEach(async function() {
     [owner, nonOwner] = await ethers.getSigners();
 
     // Deploy token contract
     const _DCNTToken = await ethers.getContractFactory("DCNTToken");
     dcnt = await _DCNTToken.deploy(mintTotal, owner.address);
     await dcnt.deployed();
+
+    const receipt = await ethers.provider.getTransactionReceipt(dcnt.deployTransaction.hash);
+    deployedBlock = await ethers.provider.getBlock(receipt.blockNumber);
   });
 
-  describe("Token features", function () {
-    context("on deployment", function () {
+  describe("Token features", function() {
+    context("on deployment", function() {
       let totalSupply: BigNumber;
 
-      beforeEach(async function () {
+      beforeEach(async function() {
         totalSupply = await dcnt.totalSupply();
       });
 
-      it("should mint the correct amount of tokens in wei (decimals)", async function () {
+      it("should mint the correct amount of tokens in wei (decimals)", function() {
         expect(totalSupply).to.equal(mintTotal);
       });
 
-      it("should mint the correct amount of tokens in whole numbers", async function () {
+      it("should mint the correct amount of tokens in whole numbers", function() {
         expect(parseInt(ethers.utils.formatEther(totalSupply))).to.eq(
           mintWhole
         );
       });
+
+      it("should set the correct next mint timestamp", async function() {
+        const actualNextMint = await dcnt.nextMint();
+        const expectedNextMint = deployedBlock.timestamp + await dcnt.MINIMUM_MINT_INTERVAL();
+        expect(actualNextMint).to.eq(expectedNextMint)
+      });
+
+      it("should not allow the owner to mint after having just minted", async function() {
+        await expect(dcnt.mint(owner.address, 1)).to.be.revertedWith(
+          "MintTooSoon()"
+        );
+      });
     });
 
-    describe("burn", function () {
-      it("should allow users to burn their tokens", async function () {
+    describe("burn", function() {
+      it("should allow users to burn their tokens", async function() {
         const totalSupply = await dcnt.totalSupply();
         const burnWhole = 500_000_000;
         const burnTotal = ethers.utils.parseEther(burnWhole.toString());
@@ -56,20 +72,20 @@ describe("DCNTToken", async function () {
       });
     });
 
-    describe("mint", function () {
+    describe("mint", function() {
       let originalTotalSupply: BigNumber,
         minimumMintInterval: number,
         mintCapBPs: number,
         nextMint: BigNumber,
         maxToMint: BigNumber;
 
-      beforeEach(async function () {
+      beforeEach(async function() {
         [originalTotalSupply, minimumMintInterval, mintCapBPs, nextMint] =
           await Promise.all([
             dcnt.totalSupply(),
             dcnt.MINIMUM_MINT_INTERVAL(),
             dcnt.MINT_CAP_BPS(),
-            dcnt.nextMint(),
+            dcnt.nextMint()
           ]);
 
         maxToMint = originalTotalSupply.mul(mintCapBPs).div(10000);
@@ -77,7 +93,7 @@ describe("DCNTToken", async function () {
         await time.increaseTo(nextMint.toNumber());
       });
 
-      context("when caller address is the owner", function () {
+      context("when caller address is the owner", function() {
         it("mints 1 wei", async function() {
           await dcnt.mint(owner.address, 1);
           expect(await dcnt.totalSupply()).to.eq(
@@ -88,14 +104,14 @@ describe("DCNTToken", async function () {
 
 
       context("when caller address is non-owner", function() {
-        it("reverts with correct error message", async function () {
+        it("reverts with correct error message", async function() {
           await expect(
             dcnt.connect(nonOwner).mint(owner.address, 1)
           ).to.be.revertedWith("Ownable: caller is not the owner");
         });
       });
 
-      context("when minting the max tokens allowed", function () {
+      context("when minting the max tokens allowed", function() {
         it("should allow the owner to mint more tokens", async function() {
           await dcnt.mint(owner.address, maxToMint);
           expect(await dcnt.totalSupply()).to.eq(
@@ -104,21 +120,21 @@ describe("DCNTToken", async function () {
         });
       });
 
-      context("when minting over the max mint amount", function () {
-        it("should not allow the owner to mint more tokens", async function () {
+      context("when minting over the max mint amount", function() {
+        it("should not allow the owner to mint more tokens", async function() {
           await expect(
             dcnt.mint(owner.address, maxToMint.add(1))
           ).to.be.revertedWith("MintExceedsMaximum()");
         });
       });
 
-      context("after new mint", function () {
-        beforeEach(async function () {
+      context("after new mint", function() {
+        beforeEach(async function() {
           // dummy mint to set the timeout interval
           await dcnt.mint(owner.address, 0);
         });
 
-        it("should not allow the owner to mint after having just minted", async function () {
+        it("should not allow the owner to mint after having just minted", async function() {
           await expect(dcnt.mint(owner.address, 1)).to.be.revertedWith(
             "MintTooSoon()"
           );
