@@ -33,5 +33,9 @@
     "ts-node": "^10.4.0",
     "typechain": "^5.2.0",
     "typescript": "^4.5.4"
+  },
+  "dependencies": {
+    "@fractal-framework/fractal-contracts": "^0.3.1",
+    "@safe-global/safe-deployments": "^1.24.0"
   }
 }
