@@ -1,5 +1,12 @@
 {
   "name": "dcnt-token",
+  "scripts": {
+    "start": "npx hardhat compile && npx hardhat node",
+    "compile": "npx hardhat compile",
+    "node": "npx hardhat node",
+    "clean": "npx hardhat clean",
+    "test": "npx hardhat test"
+  },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.4",
     "@nomiclabs/hardhat-etherscan": "^2.1.8",
