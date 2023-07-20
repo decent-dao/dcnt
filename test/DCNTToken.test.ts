@@ -4,7 +4,7 @@ import { BigNumber, providers } from "ethers";
 import { ethers } from "hardhat";
 import { DCNTToken } from "../typechain";
 
-import time from "./time";
+import time from "./utils/time";
 
 describe("DCNTToken", async function() {
   let owner: SignerWithAddress;

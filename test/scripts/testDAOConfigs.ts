@@ -1,4 +1,4 @@
-import { DecentDAOConfig } from './../DaoBuilder/types';
+import { DecentDAOConfig } from '../../DaoBuilder/types';
 import { ethers } from "ethers";
 
 export const decentTestConfig: DecentDAOConfig = {
