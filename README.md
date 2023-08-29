@@ -15,8 +15,12 @@ deployments.
 ```
 nvm use
 npx hardhat compile
+
+// Currently supported networks are goerli + mainnet.
 npx hardhat run --network <network> scripts/deploy.ts
 ```
 
-# Notes
-1. Currently supported networks are goerli + mainnet.
+# Test
+```
+npm run test
+```
