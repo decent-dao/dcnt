@@ -4,7 +4,7 @@ import { BigNumber } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { deployDecentToken } from '../DaoBuilder/dcntTokenDeploy';
+import { deployDCNTAndLockRelease } from '../DaoBuilder/dcntTokenDeploy';
 import { decentTestConfig } from './testDAOConfigs';
 
 describe("deployDecentToken", function () {
@@ -17,7 +17,7 @@ describe("deployDecentToken", function () {
 
   beforeEach(async function () {
     [deployer] = await ethers.getSigners();
-    const result = await deployDecentToken(deployer, decentTestConfig);
+    const result = await deployDCNTAndLockRelease(deployer, decentTestConfig);
     initialSupply = ethers.utils.parseEther(decentTestConfig.initialSupply);
     totalLockedAmount = result.totalLockedAmount;
     token = result.dcntTokenContract;

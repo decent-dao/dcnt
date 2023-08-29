@@ -1,11 +1,10 @@
 import { DecentDAOConfig } from "./types";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { DCNTToken, LockRelease } from "../typechain";
 
-export const deployDecentToken = async (
+export const deployDCNTAndLockRelease = async (
   deployer: SignerWithAddress,
   decentDAOConfig: DecentDAOConfig
 ): Promise<{
@@ -13,50 +12,53 @@ export const deployDecentToken = async (
   dcntTokenContract: DCNTToken;
   lockReleaseContract: LockRelease;
 }> => {
-  const DCNTTokenArtifact = await ethers.getContractFactory("DCNTToken");
-  const LockReleaseArtifact = await ethers.getContractFactory("LockRelease");
-
-  // First deploy DCNTToken and mint tokens to deployer address
-  const initialSupply = ethers.utils.parseEther(decentDAOConfig.initialSupply); // Supply for Token Generation Event
-  const token = await DCNTTokenArtifact.deploy(initialSupply, deployer.address);
-  await token.deployed();
-  console.log(`DCNTToken deployed to: ${token.address}`);
-
-  const totalLockedAmount = decentDAOConfig.beneficiaries.reduce(
-    (a, b) => a.add(b.lockedAmount),
-    ethers.BigNumber.from(0)
+  //
+  // Deploy DCNT token
+  // Tokens will be minted to deployer address
+  const dcntTokenFactory = await ethers.getContractFactory("DCNTToken");
+  const dcntTokenContract = await dcntTokenFactory.deploy(
+    ethers.utils.parseEther(decentDAOConfig.initialSupply),
+    await deployer.getAddress()
   );
+  await dcntTokenContract.deployed();
 
-  // Deploy LockRelease contract with token address, beneficiaries, amounts, start, and duration
+  //
+  // Deploy lock release factory
+  // Sets up voting power prior to DCNT tokens being transferred
+  const lockReleaseFactory = await ethers.getContractFactory("LockRelease");
   const start = decentDAOConfig.lockStart;
   const duration = decentDAOConfig.lockDuration;
-
-  const lockRelease = await LockReleaseArtifact.deploy(
-    token.address,
+  const lockReleaseContract = await lockReleaseFactory.deploy(
+    dcntTokenContract.address,
     decentDAOConfig.beneficiaries.map((a) => a.address),
     decentDAOConfig.beneficiaries.map((a) => a.lockedAmount),
     start,
     duration
   );
-  await lockRelease.deployed();
-  console.log(`LockRelease contract deployed to: ${lockRelease.address}`);
+  await lockReleaseContract.deployed();
 
-  const tokenTransferTx = await token.transfer(
-    lockRelease.address,
+  //
+  // Transfer beneficiary total tokens to lock contract
+  const totalLockedAmount = decentDAOConfig.beneficiaries.reduce(
+    (a, b) => a.add(b.lockedAmount),
+    ethers.BigNumber.from(0)
+  );
+  const tokenTransferTx = await dcntTokenContract.transfer(
+    lockReleaseContract.address,
     totalLockedAmount
   );
-
   await tokenTransferTx.wait();
 
-  console.log(`Transferred ${totalLockedAmount} DCNT to LockRelease contract`);
+  console.log("Decent Token and Lock Release contracts deployed:");
   console.table({
-    "DCNTToken address": token.address,
-    "LockRelease address": lockRelease.address,
-    "Total locked amount": totalLockedAmount.toString(),
+    dcntTokenContract: dcntTokenContract.address,
+    lockReleaseContract: lockReleaseContract.address,
+    totalLockedAmount: totalLockedAmount.toString(),
   });
+
   return {
     totalLockedAmount,
-    dcntTokenContract: token,
-    lockReleaseContract: lockRelease,
+    dcntTokenContract,
+    lockReleaseContract,
   };
 };

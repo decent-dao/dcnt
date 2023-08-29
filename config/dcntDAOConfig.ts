@@ -1,5 +1,5 @@
-import { ethers } from "ethers";
-import { DecentDAOConfig } from "./types";
+import { DecentDAOConfig } from "../DaoBuilder/types";
+import { beneficiaries } from "./beneficiaries";
 
 // @note 1 block = ~15 seconds
 // @note 1 day = 5760 blocks
@@ -16,7 +16,7 @@ export const decentDAOConfig: DecentDAOConfig = {
   // Lock Release | duration of the release schedule in seconds
   lockDuration: ONE_YEAR, // (seconds)
   // Snapshot | url of the snapshot page
-  snapshotURL: "https://snapshot.org/#/decentdao.eth",
+  snapshotURL: "https://snapshot.org/#/decent-dao.eth",
   // DCNT Token | initial supply of the token
   initialSupply: "100", // (+18 decimals)
   // Linear Strategy |  Length of time that voting occurs
@@ -32,10 +32,8 @@ export const decentDAOConfig: DecentDAOConfig = {
   // Linear Strategy | Percentage of total possible tokens that must be delegated to a user in order for them to create a proposal.  Suggested 1%.
   proposalRequiredWeight: 0, // (basis points)
   // Lock Release | Beneficiaries of the lock release schedule
-  beneficiaries: [
-    {
-      address: "0x629750317d320B8bB4d48D345A6d699Cc855c4a6",
-      lockedAmount: ethers.utils.parseEther("5"),
-    },
-  ],
+  /**
+   * Beneficiaries {@link beneficiaries}
+   */
+  beneficiaries,
 };
