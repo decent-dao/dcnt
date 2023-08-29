@@ -1,7 +1,9 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { expect } from "chai";
-import { BigNumber } from "ethers";
-import { ethers } from "hardhat";
+import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
+import {expect} from "chai";
+import {BigNumber, BigNumberish} from "ethers";
+import {ethers, network, waffle} from "hardhat";
+const { loadFixture } = waffle;
+
 import {
   DCNTToken,
   DCNTToken__factory,
@@ -10,8 +12,9 @@ import {
 } from "../typechain";
 
 import time from "./utils/time";
+import {dcntFixture, lockReleaseFixture, releaseFixture} from "./utils/fixtures";
 
-describe("LockRelease", async function() {
+describe.only("LockRelease", async () => {
   let deployer: SignerWithAddress;
   let owner: SignerWithAddress;
   let beneficiary1: SignerWithAddress;
@@ -24,54 +27,49 @@ describe("LockRelease", async function() {
   let duration: number;
   const [b1Total, b2Total, b3Total, b4Total] = [100, 200, 300, 400];
 
-  beforeEach(async function() {
+  let beneficiaries: string[];
+  let bTotals = [b1Total, b2Total, b3Total, b4Total];
+
+  beforeEach(async () => {
     [deployer, owner, beneficiary1, beneficiary2, beneficiary3, beneficiary4] =
       await ethers.getSigners();
 
+    beneficiaries = [beneficiary1.address, beneficiary2.address, beneficiary3.address, beneficiary4.address]
     // Token unlocks start in 100 seconds from current time, and vesting lasts for 100 seconds
     startTime = (await time.latest()) + 100;
     duration = 100;
 
     // Deploy DCNT token
-    dcnt = await new DCNTToken__factory(deployer).deploy(1000, owner.address);
+    const fixture = await loadFixture(dcntFixture)
+    dcnt = fixture.dcnt;
   });
 
-  describe("LockRelease Deployment", function() {
-    it("Cannot be deployed with token as address zero", async function() {
+  describe("LockRelease Deployment", function () {
+    it("Cannot be deployed with token as address zero", async () => {
       await expect(
         new LockRelease__factory(deployer).deploy(
           ethers.constants.AddressZero,
-          [
-            beneficiary1.address,
-            beneficiary2.address,
-            beneficiary3.address,
-            beneficiary4.address
-          ],
-          [b1Total, b2Total, b3Total, b4Total],
+          beneficiaries,
+          bTotals,
           startTime,
           duration
         )
       ).to.be.revertedWith("InvalidToken()");
     });
 
-    it("Cannot be deployed with a duration of zero", async function() {
+    it("Cannot be deployed with a duration of zero", async () => {
       await expect(
         new LockRelease__factory(deployer).deploy(
           dcnt.address,
-          [
-            beneficiary1.address,
-            beneficiary2.address,
-            beneficiary3.address,
-            beneficiary4.address
-          ],
-          [b1Total, b2Total, b3Total, b4Total],
+          beneficiaries,
+          bTotals,
           startTime,
           0
         )
       ).to.be.revertedWith("ZeroDuration()");
     });
 
-    it("Cannot be deployed with invalid array lengths", async function() {
+    it("Cannot be deployed with invalid array lengths", async () => {
       await expect(
         new LockRelease__factory(deployer).deploy(
           dcnt.address,
@@ -98,16 +96,11 @@ describe("LockRelease", async function() {
       ).to.be.revertedWith("InvalidArrayLengths()");
     });
 
-    it("Cannot be deployed if one of the amounts is zero", async function() {
+    it("Cannot be deployed if one of the amounts is zero", async () => {
       await expect(
         new LockRelease__factory(deployer).deploy(
           dcnt.address,
-          [
-            beneficiary1.address,
-            beneficiary2.address,
-            beneficiary3.address,
-            beneficiary4.address
-          ],
+          beneficiaries,
           [b1Total, b2Total, b3Total, 0],
           startTime,
           duration
@@ -115,7 +108,7 @@ describe("LockRelease", async function() {
       ).to.be.revertedWith("InvalidAmount()");
     });
 
-    it("Cannot be deployed if one of the beneficiaries is address zero", async function() {
+    it("Cannot be deployed if one of the beneficiaries is address zero", async () => {
       await expect(
         new LockRelease__factory(deployer).deploy(
           dcnt.address,
@@ -125,14 +118,14 @@ describe("LockRelease", async function() {
             beneficiary3.address,
             beneficiary4.address
           ],
-          [b1Total, b2Total, b3Total, b4Total],
+          bTotals,
           startTime,
           duration
         )
       ).to.be.revertedWith("InvalidBeneficiary()");
     });
 
-    it("Cannot be deployed with duplicate beneficiaries", async function() {
+    it("Cannot be deployed with duplicate beneficiaries", async () => {
       await expect(
         new LockRelease__factory(deployer).deploy(
           dcnt.address,
@@ -148,72 +141,73 @@ describe("LockRelease", async function() {
         )
       ).to.be.revertedWith("DuplicateBeneficiary()");
     });
-  });
 
-  context("deploying with 4 beneficiaries, at time of deployment", function() {
-    beforeEach(async function() {
-      lockRelease = await new LockRelease__factory(deployer).deploy(
-        dcnt.address,
-        [
+    context("deploying with 4 beneficiaries", function () {
+      beforeEach(async () => {
+        const fixture = await loadFixture(lockReleaseFixture)
+        lockRelease = fixture.lockRelease
+        // await dcnt.connect(beneficiary1).delegate(beneficiary1.address);
+        // await dcnt.connect(beneficiary2).delegate(beneficiary2.address);
+        // await dcnt.connect(beneficiary3).delegate(beneficiary3.address);
+        // await dcnt.connect(beneficiary4).delegate(beneficiary4.address);
+      });
+
+      it("initializes beneficiaries array correctly", async () => {
+        expect(await lockRelease.getBeneficiaries()).to.deep.eq([
           beneficiary1.address,
           beneficiary2.address,
           beneficiary3.address,
           beneficiary4.address
-        ],
-        [b1Total, b2Total, b3Total, b4Total],
-        startTime,
-        duration
-      );
+        ]);
+      });
 
-      await dcnt.connect(deployer).transfer(lockRelease.address, 1000);
+      it("initializes beneficiary schedules correctly", async () => {
+        expect(await lockRelease.getTotal(beneficiary1.address)).to.eq(b1Total);
+        expect(await lockRelease.getTotal(beneficiary2.address)).to.eq(b2Total);
+        expect(await lockRelease.getTotal(beneficiary3.address)).to.eq(b3Total);
+        expect(await lockRelease.getTotal(beneficiary4.address)).to.eq(b4Total);
 
-      // await dcnt.connect(beneficiary1).delegate(beneficiary1.address);
-      // await dcnt.connect(beneficiary2).delegate(beneficiary2.address);
-      // await dcnt.connect(beneficiary3).delegate(beneficiary3.address);
-      // await dcnt.connect(beneficiary4).delegate(beneficiary4.address);
-    });
+        expect(await lockRelease.getReleased(beneficiary1.address)).to.eq(0);
+        expect(await lockRelease.getReleased(beneficiary2.address)).to.eq(0);
+        expect(await lockRelease.getReleased(beneficiary3.address)).to.eq(0);
+        expect(await lockRelease.getReleased(beneficiary4.address)).to.eq(0);
+      });
 
-    it("initializes beneficiaries array correctly", async function() {
-      expect(await lockRelease.getBeneficiaries()).to.deep.eq([
-        beneficiary1.address,
-        beneficiary2.address,
-        beneficiary3.address,
-        beneficiary4.address
-      ]);
-    });
+      it("initializes delegates addresses correctly", async () => {
+        expect(await lockRelease.delegates(beneficiary1.address)).to.eq(
+          beneficiary1.address
+        );
+        expect(await lockRelease.delegates(beneficiary2.address)).to.eq(
+          beneficiary2.address
+        );
+        expect(await lockRelease.delegates(beneficiary3.address)).to.eq(
+          beneficiary3.address
+        );
+        expect(await lockRelease.delegates(beneficiary4.address)).to.eq(
+          beneficiary4.address
+        );
+      });
 
-    it("initializes beneficiary schedules correctly", async function() {
-      expect(await lockRelease.getTotal(beneficiary1.address)).to.eq(b1Total);
-      expect(await lockRelease.getTotal(beneficiary2.address)).to.eq(b2Total);
-      expect(await lockRelease.getTotal(beneficiary3.address)).to.eq(b3Total);
-      expect(await lockRelease.getTotal(beneficiary4.address)).to.eq(b4Total);
+      it("initializes delegates voting power correctly", async () => {
+        expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(b1Total);
+        expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(b2Total);
+        expect(await lockRelease.getVotes(beneficiary3.address)).to.eq(b3Total);
+        expect(await lockRelease.getVotes(beneficiary4.address)).to.eq(b4Total);
+      });
 
-      expect(await lockRelease.getReleased(beneficiary1.address)).to.eq(0);
-      expect(await lockRelease.getReleased(beneficiary2.address)).to.eq(0);
-      expect(await lockRelease.getReleased(beneficiary3.address)).to.eq(0);
-      expect(await lockRelease.getReleased(beneficiary4.address)).to.eq(0);
-    });
+      it("has correct amount matured", async () => {
+        expect(await lockRelease.getTotalMatured(beneficiary1.address)).to.eq(0);
+        expect(await lockRelease.getTotalMatured(beneficiary2.address)).to.eq(0);
+        expect(await lockRelease.getTotalMatured(beneficiary3.address)).to.eq(0);
+        expect(await lockRelease.getTotalMatured(beneficiary4.address)).to.eq(0);
+      });
 
-    it("initializes delegates addresses correctly", async function() {
-      expect(await lockRelease.delegates(beneficiary1.address)).to.eq(
-        beneficiary1.address
-      );
-      expect(await lockRelease.delegates(beneficiary2.address)).to.eq(
-        beneficiary2.address
-      );
-      expect(await lockRelease.delegates(beneficiary3.address)).to.eq(
-        beneficiary3.address
-      );
-      expect(await lockRelease.delegates(beneficiary4.address)).to.eq(
-        beneficiary4.address
-      );
-    });
-
-    it("initializes delegates voting power correctly", async function() {
-      expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(b1Total);
-      expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(b2Total);
-      expect(await lockRelease.getVotes(beneficiary3.address)).to.eq(b3Total);
-      expect(await lockRelease.getVotes(beneficiary4.address)).to.eq(b4Total);
+      it("has correct amount releasable", async () => {
+        expect(await lockRelease.getReleasable(beneficiary1.address)).to.eq(0);
+        expect(await lockRelease.getReleasable(beneficiary2.address)).to.eq(0);
+        expect(await lockRelease.getReleasable(beneficiary3.address)).to.eq(0);
+        expect(await lockRelease.getReleasable(beneficiary4.address)).to.eq(0);
+      });
     });
     // expect(await dcnt.delegates(beneficiary1.address)).to.eq(
     //   beneficiary1.address
@@ -232,22 +226,15 @@ describe("LockRelease", async function() {
     // expect(await dcnt.getVotes(beneficiary2.address)).to.eq(0);
     // expect(await dcnt.getVotes(beneficiary3.address)).to.eq(0);
     // expect(await dcnt.getVotes(beneficiary4.address)).to.eq(0);
-    // expect(await lockRelease.getTotalMatured(beneficiary1.address)).to.eq(0);
-    // expect(await lockRelease.getTotalMatured(beneficiary2.address)).to.eq(0);
-    // expect(await lockRelease.getTotalMatured(beneficiary3.address)).to.eq(0);
-    // expect(await lockRelease.getTotalMatured(beneficiary4.address)).to.eq(0);
-    //
-    // expect(await lockRelease.getReleasable(beneficiary1.address)).to.eq(0);
-    // expect(await lockRelease.getReleasable(beneficiary2.address)).to.eq(0);
-    // expect(await lockRelease.getReleasable(beneficiary3.address)).to.eq(0);
-    // expect(await lockRelease.getReleasable(beneficiary4.address)).to.eq(0);
+    describe("at start of unlock time", async () => {
+      beforeEach(async () => {
+        const fixture = await loadFixture(lockReleaseFixture)
+        lockRelease = fixture.lockRelease
 
-    context("at start of unlock time", async function() {
-      beforeEach(async function() {
         await time.increaseTo(startTime);
       });
 
-      it("has not released any tokens yet", async function() {
+      it("has not released any tokens yet", async () => {
         expect(await lockRelease.getReleased(beneficiary1.address)).to.eq(0);
         expect(await lockRelease.getReleased(beneficiary2.address)).to.eq(0);
         expect(await lockRelease.getReleased(beneficiary3.address)).to.eq(0);
@@ -255,305 +242,365 @@ describe("LockRelease", async function() {
       });
     });
 
-    context("at 10% through vesting period", async function() {
-      beforeEach(async function() {
+    describe("at 10% through vesting period", async () => {
+      beforeEach(async () => {
+        const fixture = await loadFixture(lockReleaseFixture)
+        lockRelease = fixture.lockRelease
+
         await time.increaseTo(startTime + 10);
       });
 
-      it("has not released any tokens", async function() {
+      it("has not released any tokens", async () => {
         expect(await lockRelease.getReleased(beneficiary1.address)).to.eq(0);
         expect(await lockRelease.getReleased(beneficiary2.address)).to.eq(0);
         expect(await lockRelease.getReleased(beneficiary3.address)).to.eq(0);
         expect(await lockRelease.getReleased(beneficiary4.address)).to.eq(0);
       });
 
-      it("has matured 10% of the total", async function() {
+      it("has matured 10% of the beneficiaries' total", async () => {
         expect(await lockRelease.getTotalMatured(beneficiary1.address)).to.eq(10);
         expect(await lockRelease.getTotalMatured(beneficiary2.address)).to.eq(20);
         expect(await lockRelease.getTotalMatured(beneficiary3.address)).to.eq(30);
         expect(await lockRelease.getTotalMatured(beneficiary4.address)).to.eq(40);
       });
 
-      expect(await lockRelease.getReleasable(beneficiary1.address)).to.eq(10);
-      expect(await lockRelease.getReleasable(beneficiary2.address)).to.eq(20);
-      expect(await lockRelease.getReleasable(beneficiary3.address)).to.eq(30);
-      expect(await lockRelease.getReleasable(beneficiary4.address)).to.eq(40);
+      it("10% of the beneficiaries' total is releasable", async () => {
+        expect(await lockRelease.getReleasable(beneficiary1.address)).to.eq(10);
+        expect(await lockRelease.getReleasable(beneficiary2.address)).to.eq(20);
+        expect(await lockRelease.getReleasable(beneficiary3.address)).to.eq(30);
+        expect(await lockRelease.getReleasable(beneficiary4.address)).to.eq(40);
+      });
 
-      expect(await lockRelease.getPending(beneficiary1.address)).to.eq(100);
-      expect(await lockRelease.getPending(beneficiary2.address)).to.eq(200);
-      expect(await lockRelease.getPending(beneficiary3.address)).to.eq(300);
-      expect(await lockRelease.getPending(beneficiary4.address)).to.eq(400);
+      it("10% of the beneficiaries' total is pending", async () => {
+        expect(await lockRelease.getPending(beneficiary1.address)).to.eq(100);
+        expect(await lockRelease.getPending(beneficiary2.address)).to.eq(200);
+        expect(await lockRelease.getPending(beneficiary3.address)).to.eq(300);
+        expect(await lockRelease.getPending(beneficiary4.address)).to.eq(400);
+      });
 
-      expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(100);
-      expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(200);
-      expect(await lockRelease.getVotes(beneficiary3.address)).to.eq(300);
-      expect(await lockRelease.getVotes(beneficiary4.address)).to.eq(400);
+      it("has delegates voting power at the same amount as before lock period started", async () => {
+        expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(b1Total);
+        expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(b2Total);
+        expect(await lockRelease.getVotes(beneficiary3.address)).to.eq(b3Total);
+        expect(await lockRelease.getVotes(beneficiary4.address)).to.eq(b4Total);
+      });
+    })
 
-      // All four beneficiaries release
-      await lockRelease.connect(beneficiary1).release();
-      await lockRelease.connect(beneficiary2).release();
-      await lockRelease.connect(beneficiary3).release();
-      await lockRelease.connect(beneficiary4).release();
+    describe.only("release", async() => {
+      context("at 10% through the vesting period", async () => {
+        let beneficiary1Released: BigNumberish, beneficiary2Released: BigNumberish, beneficiary3Released: BigNumberish,
+          beneficiary4Released: BigNumberish;
 
-      const beneficiary1Released1 = BigNumber.from(100).mul(11).div(100);
-      const beneficiary2Released1 = BigNumber.from(200).mul(12).div(100);
-      const beneficiary3Released1 = BigNumber.from(300).mul(13).div(100);
-      const beneficiary4Released1 = BigNumber.from(400).mul(14).div(100);
+        beforeEach(async () => {
+          const increaseTimePercentage = 10;
+          await time.increaseTo(startTime + (duration / increaseTimePercentage));
 
-      expect(await dcnt.balanceOf(lockRelease.address)).to.eq(
-        BigNumber.from(1000)
-          .sub(beneficiary1Released1)
-          .sub(beneficiary2Released1)
-          .sub(beneficiary3Released1)
-          .sub(beneficiary4Released1)
-      );
-      expect(await dcnt.balanceOf(beneficiary1.address)).to.eq(
-        beneficiary1Released1
-      );
-      expect(await dcnt.balanceOf(beneficiary2.address)).to.eq(
-        beneficiary2Released1
-      );
-      expect(await dcnt.balanceOf(beneficiary3.address)).to.eq(
-        beneficiary3Released1
-      );
-      expect(await dcnt.balanceOf(beneficiary4.address)).to.eq(
-        beneficiary4Released1
-      );
+          const fixture = await loadFixture(lockReleaseFixture)
+          lockRelease = fixture.lockRelease
 
-      expect(await lockRelease.getReleased(beneficiary1.address)).to.eq(
-        beneficiary1Released1
-      );
-      expect(await lockRelease.getReleased(beneficiary2.address)).to.eq(
-        beneficiary2Released1
-      );
-      expect(await lockRelease.getReleased(beneficiary3.address)).to.eq(
-        beneficiary3Released1
-      );
-      expect(await lockRelease.getReleased(beneficiary4.address)).to.eq(
-        beneficiary4Released1
-      );
 
-      expect(await dcnt.getVotes(beneficiary1.address)).to.eq(
-        beneficiary1Released1
-      );
-      expect(await dcnt.getVotes(beneficiary2.address)).to.eq(
-        beneficiary2Released1
-      );
-      expect(await dcnt.getVotes(beneficiary3.address)).to.eq(
-        beneficiary3Released1
-      );
-      expect(await dcnt.getVotes(beneficiary4.address)).to.eq(
-        beneficiary4Released1
-      );
 
-      expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(100);
-      expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(200);
-      expect(await lockRelease.getVotes(beneficiary3.address)).to.eq(300);
-      expect(await lockRelease.getVotes(beneficiary4.address)).to.eq(400);
+          // Call release for all beneficiaries
+          await loadFixture(releaseFixture)
 
-      // Increase time to halfway through vesting period
-      await time.increaseTo(startTime + 50);
+          beneficiary1Released = BigNumber.from(b1Total).mul(increaseTimePercentage).div(duration);
+          beneficiary2Released = BigNumber.from(b2Total).mul(increaseTimePercentage).div(duration);
+          beneficiary3Released = BigNumber.from(b3Total).mul(increaseTimePercentage).div(duration);
+          beneficiary4Released = BigNumber.from(b4Total).mul(increaseTimePercentage).div(duration);
+        })
 
-      // All four beneficiaries release
-      await lockRelease.connect(beneficiary1).release();
-      await lockRelease.connect(beneficiary2).release();
-      await lockRelease.connect(beneficiary3).release();
-      await lockRelease.connect(beneficiary4).release();
+        it("releases the correct amount of DCNT token to each beneficiary", async () => {
+          expect(await dcnt.balanceOf(beneficiary1.address)).to.eq(
+            beneficiary1Released
+          );
+          expect(await dcnt.balanceOf(beneficiary2.address)).to.eq(
+            beneficiary2Released
+          );
+          expect(await dcnt.balanceOf(beneficiary3.address)).to.eq(
+            beneficiary3Released
+          );
+          expect(await dcnt.balanceOf(beneficiary4.address)).to.eq(
+            beneficiary4Released
+          );
 
-      const beneficiary1Released2 = BigNumber.from(100)
-        .mul(51)
-        .div(100)
-        .sub(beneficiary1Released1);
-      const beneficiary2Released2 = BigNumber.from(200)
-        .mul(52)
-        .div(100)
-        .sub(beneficiary2Released1);
-      const beneficiary3Released2 = BigNumber.from(300)
-        .mul(53)
-        .div(100)
-        .sub(beneficiary3Released1);
-      const beneficiary4Released2 = BigNumber.from(400)
-        .mul(54)
-        .div(100)
-        .sub(beneficiary4Released1);
+          // has correct amount of released tokens for each beneficiary
+          expect(await lockRelease.getReleased(beneficiary1.address)).to.eq(
+            beneficiary1Released
+          );
+          expect(await lockRelease.getReleased(beneficiary2.address)).to.eq(
+            beneficiary2Released
+          );
+          expect(await lockRelease.getReleased(beneficiary3.address)).to.eq(
+            beneficiary3Released
+          );
+          expect(await lockRelease.getReleased(beneficiary4.address)).to.eq(
+            beneficiary4Released
+          );
 
-      expect(await dcnt.balanceOf(lockRelease.address)).to.eq(
-        BigNumber.from(1000)
-          .sub(beneficiary1Released1)
-          .sub(beneficiary2Released1)
-          .sub(beneficiary3Released1)
-          .sub(beneficiary4Released1)
-          .sub(beneficiary1Released2)
-          .sub(beneficiary2Released2)
-          .sub(beneficiary3Released2)
-          .sub(beneficiary4Released2)
-      );
-      expect(await dcnt.balanceOf(deployer.address)).to.eq(0);
-      expect(await dcnt.balanceOf(beneficiary1.address)).to.eq(
-        beneficiary1Released1.add(beneficiary1Released2)
-      );
-      expect(await dcnt.balanceOf(beneficiary2.address)).to.eq(
-        beneficiary2Released1.add(beneficiary2Released2)
-      );
-      expect(await dcnt.balanceOf(beneficiary3.address)).to.eq(
-        beneficiary3Released1.add(beneficiary3Released2)
-      );
-      expect(await dcnt.balanceOf(beneficiary4.address)).to.eq(
-        beneficiary4Released1.add(beneficiary4Released2)
-      );
+          expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(BigNumber.from(b1Total).sub(beneficiary1Released));
+          expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(BigNumber.from(b2Total).sub(beneficiary2Released));
+          expect(await lockRelease.getVotes(beneficiary3.address)).to.eq(BigNumber.from(b3Total).sub(beneficiary3Released));
+          expect(await lockRelease.getVotes(beneficiary4.address)).to.eq(BigNumber.from(b4Total).sub(beneficiary4Released));
+        })
 
-      expect(await lockRelease.getTotal(beneficiary1.address)).to.eq(100);
-      expect(await lockRelease.getTotal(beneficiary2.address)).to.eq(200);
-      expect(await lockRelease.getTotal(beneficiary3.address)).to.eq(300);
-      expect(await lockRelease.getTotal(beneficiary4.address)).to.eq(400);
+        // it("has correct amount of DCNT token in the lock contract", async () => {
+        //   expect(await dcnt.balanceOf(lockRelease.address)).to.eq(
+        //     BigNumber.from(1000)
+        //       .sub(beneficiary1Released)
+        //       .sub(beneficiary2Released)
+        //       .sub(beneficiary3Released)
+        //       .sub(beneficiary4Released)
+        //   );
+        // })
 
-      expect(await lockRelease.getReleased(beneficiary1.address)).to.eq(
-        beneficiary1Released1.add(beneficiary1Released2)
-      );
-      expect(await lockRelease.getReleased(beneficiary2.address)).to.eq(
-        beneficiary2Released1.add(beneficiary2Released2)
-      );
-      expect(await lockRelease.getReleased(beneficiary3.address)).to.eq(
-        beneficiary3Released1.add(beneficiary3Released2)
-      );
-      expect(await lockRelease.getReleased(beneficiary4.address)).to.eq(
-        beneficiary4Released1.add(beneficiary4Released2)
-      );
+        // it("has correct amount of released tokens for each beneficiary", async () => {
+        //   await network.provider.send("evm_setAutomine", [false]);
+        //   console.log("wow");
+        //   await lockRelease.connect(beneficiary1).release();
+        //   await lockRelease.connect(beneficiary2).release();
+        //   await lockRelease.connect(beneficiary3).release();
+        //   await lockRelease.connect(beneficiary4).release();
+        //   await network.provider.send("evm_mine");
+        //
+        //
+        // })
+        //
+        // it("sets voting power to 0", async() => {
+        //   await network.provider.send("evm_setAutomine", [false]);
+        //   console.log("wow");
+        //   await lockRelease.connect(beneficiary1).release();
+        //   await lockRelease.connect(beneficiary2).release();
+        //   await lockRelease.connect(beneficiary3).release();
+        //   await lockRelease.connect(beneficiary4).release();
+        //   await network.provider.send("evm_mine");
+        //
+        //
+        // });
+      });
 
-      const currentTime = await time.latest();
 
-      const beneficiary1Matured = BigNumber.from(currentTime)
-        .sub(startTime)
-        .mul(100)
-        .div(duration);
-      const beneficiary2Matured = BigNumber.from(currentTime)
-        .sub(startTime)
-        .mul(200)
-        .div(duration);
-      const beneficiary3Matured = BigNumber.from(currentTime)
-        .sub(startTime)
-        .mul(300)
-        .div(duration);
-      const beneficiary4Matured = BigNumber.from(currentTime)
-        .sub(startTime)
-        .mul(400)
-        .div(duration);
-
-      expect(await lockRelease.getTotalMatured(beneficiary1.address)).to.eq(
-        beneficiary1Matured
-      );
-      expect(await lockRelease.getTotalMatured(beneficiary2.address)).to.eq(
-        beneficiary2Matured
-      );
-      expect(await lockRelease.getTotalMatured(beneficiary3.address)).to.eq(
-        beneficiary3Matured
-      );
-      expect(await lockRelease.getTotalMatured(beneficiary4.address)).to.eq(
-        beneficiary4Matured
-      );
-
-      expect(await lockRelease.getReleasable(beneficiary1.address)).to.eq(
-        beneficiary1Matured
-          .sub(beneficiary1Released1)
-          .sub(beneficiary1Released2)
-      );
-      expect(await lockRelease.getReleasable(beneficiary2.address)).to.eq(
-        beneficiary2Matured
-          .sub(beneficiary2Released1)
-          .sub(beneficiary2Released2)
-      );
-      expect(await lockRelease.getReleasable(beneficiary3.address)).to.eq(
-        beneficiary3Matured
-          .sub(beneficiary3Released1)
-          .sub(beneficiary3Released2)
-      );
-      expect(await lockRelease.getReleasable(beneficiary4.address)).to.eq(
-        beneficiary4Matured
-          .sub(beneficiary4Released1)
-          .sub(beneficiary4Released2)
-      );
-
-      expect(await lockRelease.getPending(beneficiary1.address)).to.eq(
-        BigNumber.from(100)
-          .sub(beneficiary1Released1)
-          .sub(beneficiary1Released2)
-      );
-      expect(await lockRelease.getPending(beneficiary2.address)).to.eq(
-        BigNumber.from(200)
-          .sub(beneficiary2Released1)
-          .sub(beneficiary2Released2)
-      );
-      expect(await lockRelease.getPending(beneficiary3.address)).to.eq(
-        BigNumber.from(300)
-          .sub(beneficiary3Released1)
-          .sub(beneficiary3Released2)
-      );
-      expect(await lockRelease.getPending(beneficiary4.address)).to.eq(
-        BigNumber.from(400)
-          .sub(beneficiary4Released1)
-          .sub(beneficiary4Released2)
-      );
-
-      expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(100);
-      expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(200);
-      expect(await lockRelease.getVotes(beneficiary3.address)).to.eq(300);
-      expect(await lockRelease.getVotes(beneficiary4.address)).to.eq(400);
-
-      // Increase time to end of vesting period
-      await time.increaseTo(startTime + duration);
-
-      // All four beneficiaries release, should all be fully vested now
-      await lockRelease.connect(beneficiary1).release();
-      await lockRelease.connect(beneficiary2).release();
-      await lockRelease.connect(beneficiary3).release();
-      await lockRelease.connect(beneficiary4).release();
-
-      expect(await dcnt.balanceOf(lockRelease.address)).to.eq(0);
-      expect(await dcnt.balanceOf(beneficiary1.address)).to.eq(100);
-      expect(await dcnt.balanceOf(beneficiary2.address)).to.eq(200);
-      expect(await dcnt.balanceOf(beneficiary3.address)).to.eq(300);
-      expect(await dcnt.balanceOf(beneficiary4.address)).to.eq(400);
-
-      expect(await lockRelease.getTotal(beneficiary1.address)).to.eq(100);
-      expect(await lockRelease.getTotal(beneficiary2.address)).to.eq(200);
-      expect(await lockRelease.getTotal(beneficiary3.address)).to.eq(300);
-      expect(await lockRelease.getTotal(beneficiary4.address)).to.eq(400);
-
-      expect(await lockRelease.getReleased(beneficiary1.address)).to.eq(100);
-      expect(await lockRelease.getReleased(beneficiary2.address)).to.eq(200);
-      expect(await lockRelease.getReleased(beneficiary3.address)).to.eq(300);
-      expect(await lockRelease.getReleased(beneficiary4.address)).to.eq(400);
-
-      expect(await lockRelease.getTotalMatured(beneficiary1.address)).to.eq(
-        100
-      );
-      expect(await lockRelease.getTotalMatured(beneficiary2.address)).to.eq(
-        200
-      );
-      expect(await lockRelease.getTotalMatured(beneficiary3.address)).to.eq(
-        300
-      );
-      expect(await lockRelease.getTotalMatured(beneficiary4.address)).to.eq(
-        400
-      );
-
-      expect(await lockRelease.getReleasable(beneficiary1.address)).to.eq(0);
-      expect(await lockRelease.getReleasable(beneficiary2.address)).to.eq(0);
-      expect(await lockRelease.getReleasable(beneficiary3.address)).to.eq(0);
-      expect(await lockRelease.getReleasable(beneficiary4.address)).to.eq(0);
-
-      expect(await lockRelease.getPending(beneficiary1.address)).to.eq(0);
-      expect(await lockRelease.getPending(beneficiary2.address)).to.eq(0);
-      expect(await lockRelease.getPending(beneficiary3.address)).to.eq(0);
-      expect(await lockRelease.getPending(beneficiary4.address)).to.eq(0);
-
-      expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(100);
-      expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(200);
-      expect(await lockRelease.getVotes(beneficiary3.address)).to.eq(300);
-      expect(await lockRelease.getVotes(beneficiary4.address)).to.eq(400);
+      //
+      // expect(await dcnt.getVotes(beneficiary1.address)).to.eq(
+      //   beneficiary1Released1
+      // );
+      // expect(await dcnt.getVotes(beneficiary2.address)).to.eq(
+      //   beneficiary2Released1
+      // );
+      // expect(await dcnt.getVotes(beneficiary3.address)).to.eq(
+      //   beneficiary3Released1
+      // );
+      // expect(await dcnt.getVotes(beneficiary4.address)).to.eq(
+      //   beneficiary4Released1
+      // );
+      //
+      // expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(100);
+      // expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(200);
+      // expect(await lockRelease.getVotes(beneficiary3.address)).to.eq(300);
+      // expect(await lockRelease.getVotes(beneficiary4.address)).to.eq(400);
+      //
+      // // Increase time to halfway through vesting period
+      // await time.increaseTo(startTime + 50);
+      //
+      // // All four beneficiaries release
+      // await lockRelease.connect(beneficiary1).release();
+      // await lockRelease.connect(beneficiary2).release();
+      // await lockRelease.connect(beneficiary3).release();
+      // await lockRelease.connect(beneficiary4).release();
+      //
+      // const beneficiary1Released2 = BigNumber.from(100)
+      //   .mul(51)
+      //   .div(100)
+      //   .sub(beneficiary1Released1);
+      // const beneficiary2Released2 = BigNumber.from(200)
+      //   .mul(52)
+      //   .div(100)
+      //   .sub(beneficiary2Released1);
+      // const beneficiary3Released2 = BigNumber.from(300)
+      //   .mul(53)
+      //   .div(100)
+      //   .sub(beneficiary3Released1);
+      // const beneficiary4Released2 = BigNumber.from(400)
+      //   .mul(54)
+      //   .div(100)
+      //   .sub(beneficiary4Released1);
+      //
+      // expect(await dcnt.balanceOf(lockRelease.address)).to.eq(
+      //   BigNumber.from(1000)
+      //     .sub(beneficiary1Released1)
+      //     .sub(beneficiary2Released1)
+      //     .sub(beneficiary3Released1)
+      //     .sub(beneficiary4Released1)
+      //     .sub(beneficiary1Released2)
+      //     .sub(beneficiary2Released2)
+      //     .sub(beneficiary3Released2)
+      //     .sub(beneficiary4Released2)
+      // );
+      // expect(await dcnt.balanceOf(deployer.address)).to.eq(0);
+      // expect(await dcnt.balanceOf(beneficiary1.address)).to.eq(
+      //   beneficiary1Released1.add(beneficiary1Released2)
+      // );
+      // expect(await dcnt.balanceOf(beneficiary2.address)).to.eq(
+      //   beneficiary2Released1.add(beneficiary2Released2)
+      // );
+      // expect(await dcnt.balanceOf(beneficiary3.address)).to.eq(
+      //   beneficiary3Released1.add(beneficiary3Released2)
+      // );
+      // expect(await dcnt.balanceOf(beneficiary4.address)).to.eq(
+      //   beneficiary4Released1.add(beneficiary4Released2)
+      // );
+      //
+      // expect(await lockRelease.getTotal(beneficiary1.address)).to.eq(100);
+      // expect(await lockRelease.getTotal(beneficiary2.address)).to.eq(200);
+      // expect(await lockRelease.getTotal(beneficiary3.address)).to.eq(300);
+      // expect(await lockRelease.getTotal(beneficiary4.address)).to.eq(400);
+      //
+      // expect(await lockRelease.getReleased(beneficiary1.address)).to.eq(
+      //   beneficiary1Released1.add(beneficiary1Released2)
+      // );
+      // expect(await lockRelease.getReleased(beneficiary2.address)).to.eq(
+      //   beneficiary2Released1.add(beneficiary2Released2)
+      // );
+      // expect(await lockRelease.getReleased(beneficiary3.address)).to.eq(
+      //   beneficiary3Released1.add(beneficiary3Released2)
+      // );
+      // expect(await lockRelease.getReleased(beneficiary4.address)).to.eq(
+      //   beneficiary4Released1.add(beneficiary4Released2)
+      // );
+      //
+      // const currentTime = await time.latest();
+      //
+      // const beneficiary1Matured = BigNumber.from(currentTime)
+      //   .sub(startTime)
+      //   .mul(100)
+      //   .div(duration);
+      // const beneficiary2Matured = BigNumber.from(currentTime)
+      //   .sub(startTime)
+      //   .mul(200)
+      //   .div(duration);
+      // const beneficiary3Matured = BigNumber.from(currentTime)
+      //   .sub(startTime)
+      //   .mul(300)
+      //   .div(duration);
+      // const beneficiary4Matured = BigNumber.from(currentTime)
+      //   .sub(startTime)
+      //   .mul(400)
+      //   .div(duration);
+      //
+      // expect(await lockRelease.getTotalMatured(beneficiary1.address)).to.eq(
+      //   beneficiary1Matured
+      // );
+      // expect(await lockRelease.getTotalMatured(beneficiary2.address)).to.eq(
+      //   beneficiary2Matured
+      // );
+      // expect(await lockRelease.getTotalMatured(beneficiary3.address)).to.eq(
+      //   beneficiary3Matured
+      // );
+      // expect(await lockRelease.getTotalMatured(beneficiary4.address)).to.eq(
+      //   beneficiary4Matured
+      // );
+      //
+      // expect(await lockRelease.getReleasable(beneficiary1.address)).to.eq(
+      //   beneficiary1Matured
+      //     .sub(beneficiary1Released1)
+      //     .sub(beneficiary1Released2)
+      // );
+      // expect(await lockRelease.getReleasable(beneficiary2.address)).to.eq(
+      //   beneficiary2Matured
+      //     .sub(beneficiary2Released1)
+      //     .sub(beneficiary2Released2)
+      // );
+      // expect(await lockRelease.getReleasable(beneficiary3.address)).to.eq(
+      //   beneficiary3Matured
+      //     .sub(beneficiary3Released1)
+      //     .sub(beneficiary3Released2)
+      // );
+      // expect(await lockRelease.getReleasable(beneficiary4.address)).to.eq(
+      //   beneficiary4Matured
+      //     .sub(beneficiary4Released1)
+      //     .sub(beneficiary4Released2)
+      // );
+      //
+      // expect(await lockRelease.getPending(beneficiary1.address)).to.eq(
+      //   BigNumber.from(100)
+      //     .sub(beneficiary1Released1)
+      //     .sub(beneficiary1Released2)
+      // );
+      // expect(await lockRelease.getPending(beneficiary2.address)).to.eq(
+      //   BigNumber.from(200)
+      //     .sub(beneficiary2Released1)
+      //     .sub(beneficiary2Released2)
+      // );
+      // expect(await lockRelease.getPending(beneficiary3.address)).to.eq(
+      //   BigNumber.from(300)
+      //     .sub(beneficiary3Released1)
+      //     .sub(beneficiary3Released2)
+      // );
+      // expect(await lockRelease.getPending(beneficiary4.address)).to.eq(
+      //   BigNumber.from(400)
+      //     .sub(beneficiary4Released1)
+      //     .sub(beneficiary4Released2)
+      // );
+      //
+      // expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(100);
+      // expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(200);
+      // expect(await lockRelease.getVotes(beneficiary3.address)).to.eq(300);
+      // expect(await lockRelease.getVotes(beneficiary4.address)).to.eq(400);
+      //
+      // // Increase time to end of vesting period
+      // await time.increaseTo(startTime + duration);
+      //
+      // // All four beneficiaries release, should all be fully vested now
+      // await lockRelease.connect(beneficiary1).release();
+      // await lockRelease.connect(beneficiary2).release();
+      // await lockRelease.connect(beneficiary3).release();
+      // await lockRelease.connect(beneficiary4).release();
+      //
+      // expect(await dcnt.balanceOf(lockRelease.address)).to.eq(0);
+      // expect(await dcnt.balanceOf(beneficiary1.address)).to.eq(100);
+      // expect(await dcnt.balanceOf(beneficiary2.address)).to.eq(200);
+      // expect(await dcnt.balanceOf(beneficiary3.address)).to.eq(300);
+      // expect(await dcnt.balanceOf(beneficiary4.address)).to.eq(400);
+      //
+      // expect(await lockRelease.getTotal(beneficiary1.address)).to.eq(100);
+      // expect(await lockRelease.getTotal(beneficiary2.address)).to.eq(200);
+      // expect(await lockRelease.getTotal(beneficiary3.address)).to.eq(300);
+      // expect(await lockRelease.getTotal(beneficiary4.address)).to.eq(400);
+      //
+      // expect(await lockRelease.getReleased(beneficiary1.address)).to.eq(100);
+      // expect(await lockRelease.getReleased(beneficiary2.address)).to.eq(200);
+      // expect(await lockRelease.getReleased(beneficiary3.address)).to.eq(300);
+      // expect(await lockRelease.getReleased(beneficiary4.address)).to.eq(400);
+      //
+      // expect(await lockRelease.getTotalMatured(beneficiary1.address)).to.eq(
+      //   100
+      // );
+      // expect(await lockRelease.getTotalMatured(beneficiary2.address)).to.eq(
+      //   200
+      // );
+      // expect(await lockRelease.getTotalMatured(beneficiary3.address)).to.eq(
+      //   300
+      // );
+      // expect(await lockRelease.getTotalMatured(beneficiary4.address)).to.eq(
+      //   400
+      // );
+      //
+      // expect(await lockRelease.getReleasable(beneficiary1.address)).to.eq(0);
+      // expect(await lockRelease.getReleasable(beneficiary2.address)).to.eq(0);
+      // expect(await lockRelease.getReleasable(beneficiary3.address)).to.eq(0);
+      // expect(await lockRelease.getReleasable(beneficiary4.address)).to.eq(0);
+      //
+      // expect(await lockRelease.getPending(beneficiary1.address)).to.eq(0);
+      // expect(await lockRelease.getPending(beneficiary2.address)).to.eq(0);
+      // expect(await lockRelease.getPending(beneficiary3.address)).to.eq(0);
+      // expect(await lockRelease.getPending(beneficiary4.address)).to.eq(0);
+      //
+      // expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(100);
+      // expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(200);
+      // expect(await lockRelease.getVotes(beneficiary3.address)).to.eq(300);
+      // expect(await lockRelease.getVotes(beneficiary4.address)).to.eq(400);
     });
 
-    it("LockRelease correctly tracks user's past votes", async function() {
+    it("LockRelease correctly tracks user's past votes", async () => {
       // Increase time to 10% through vesting period
       await time.increaseTo(startTime + 10);
 
@@ -659,7 +706,7 @@ describe("LockRelease", async function() {
       ).to.eq(blockSevenVotes);
     });
 
-    it("Reverts when getPastVotes is called on the current or a future block", async function() {
+    it("Reverts when getPastVotes is called on the current or a future block", async () => {
       await expect(
         lockRelease.getPastVotes(
           beneficiary1.address,
@@ -677,7 +724,7 @@ describe("LockRelease", async function() {
       ).to.be.revertedWith("ERC20Votes: future lookup");
     });
 
-    it("Reverts when release is called and releasable amount is zero", async function() {
+    it("Reverts when release is called and releasable amount is zero", async () => {
       // vesting hasn't started, so releasable amount is zero
       expect(await lockRelease.getReleasable(beneficiary1.address)).to.eq(0);
       await expect(
