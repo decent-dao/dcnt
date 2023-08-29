@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import { getMasterCopies, getSafeData } from "../DaoBuilder/daoUtils";
 import { deployDCNTAndLockRelease } from "../DaoBuilder/dcntTokenDeploy";
 import { encodeMultiSend } from "../DaoBuilder/utils";
-import { decentDAOConfig } from "../DaoBuilder/dcntDAOConfig";
+import { decentDAOConfig } from "../config/dcntDAOConfig";
 import { utils } from "ethers";
 import { logDcntDaoTxt, logEthereumLogo } from "./graphics/graphics";
 
