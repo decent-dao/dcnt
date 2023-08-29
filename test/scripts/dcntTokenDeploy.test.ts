@@ -1,10 +1,10 @@
-import { DCNTToken } from './../typechain/DCNTToken.d';
-import { LockRelease } from './../typechain/LockRelease.d';
+import { DCNTToken } from "../../typechain";
+import { LockRelease } from "../../typechain";
 import { BigNumber } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { deployDecentToken } from '../DaoBuilder/dcntTokenDeploy';
+import { deployDecentToken } from '../../DaoBuilder/dcntTokenDeploy';
 import { decentTestConfig } from './testDAOConfigs';
 
 describe("deployDecentToken", function () {
