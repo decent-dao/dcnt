@@ -2,7 +2,7 @@
 import { SafeTransaction } from "./types";
 import { buildContractCall, getRandomBytes } from "./utils";
 import { Contract } from "ethers";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import {
   GnosisSafeProxyFactory__factory as GnosisSafeFactory,
   Azorius as IAzorius,
@@ -21,27 +21,26 @@ import {
 } from "@safe-global/safe-deployments";
 const { AddressZero, HashZero } = ethers.constants;
 
-export const CHAIN_ID = 5;
 export const SAFE_VERSION = "1.3.0";
 
 /* eslint-disable node/no-unsupported-features/es-syntax */
-async function getFractalContractAddressByChainId(_chainId: number) {
-  const networkPath = _chainId === 1 ? "mainnet" : "goerli";
+async function getFractalContractAddressesByNetworkName() {
+  const contractsPath = `@fractal-framework/fractal-contracts/deployments/${network.name}`;
 
   const Azorius = await import(
-    `@fractal-framework/fractal-contracts/deployments/${networkPath}/Azorius.json`
+    `${contractsPath}/Azorius.json`
   );
   const FractalRegistry = await import(
-    `@fractal-framework/fractal-contracts/deployments/${networkPath}/FractalRegistry.json`
+    `${contractsPath}/FractalRegistry.json`
   );
   const KeyValuePairs = await import(
-    `@fractal-framework/fractal-contracts/deployments/${networkPath}/KeyValuePairs.json`
+    `${contractsPath}/KeyValuePairs.json`
   );
   const LinearERC20Voting = await import(
-    `@fractal-framework/fractal-contracts/deployments/${networkPath}/LinearERC20Voting.json`
+    `${contractsPath}/LinearERC20Voting.json`
   );
   const ModuleProxyFactory = await import(
-    `@fractal-framework/fractal-contracts/deployments/${networkPath}/ModuleProxyFactory.json`
+    `${contractsPath}/ModuleProxyFactory.json`
   );
   return {
     Azorius,
@@ -61,13 +60,17 @@ export const getMasterCopies = async (): Promise<{
   keyValuePairContract: IKeyValuePairs;
   multisendContract: Contract;
 }> => {
+  if (!network.config.chainId) {
+    throw Error(`No chain ID found for: ${network.name}`)
+  }
+
   const {
     Azorius,
     FractalRegistry,
     KeyValuePairs,
     LinearERC20Voting,
     ModuleProxyFactory,
-  } = await getFractalContractAddressByChainId(CHAIN_ID);
+  } = await getFractalContractAddressesByNetworkName();
 
   const zodiacModuleProxyFactoryContract = (await ethers.getContractAt(
     ModuleProxyFactory.abi as Record<string, any>[],
@@ -96,7 +99,7 @@ export const getMasterCopies = async (): Promise<{
 
   const multisendSingletonDeployment = getMultiSendCallOnlyDeployment({
     version: SAFE_VERSION,
-    network: CHAIN_ID.toString(),
+    network: network.config.chainId.toString(),
   });
   if (!multisendSingletonDeployment)
     throw new Error("Multisend contract not found");
@@ -105,6 +108,16 @@ export const getMasterCopies = async (): Promise<{
     multisendSingletonDeployment.abi,
     multisendSingletonDeployment.defaultAddress
   );
+
+  console.log("Master copies fetched");
+  console.table({
+    zodiacModuleProxyFactoryContract: zodiacModuleProxyFactoryContract.address,
+    fractalAzoriusMasterCopyContract: fractalAzoriusMasterCopyContract.address,
+    fractalRegistryContract: fractalRegistryContract.address,
+    keyValuePairContract: keyValuePairContract.address,
+    linearVotingMasterCopyContract: linearVotingMasterCopyContract.address,
+    multisendContract: multisendContract.address,
+  });
 
   return {
     multisendContract,
@@ -122,9 +135,13 @@ export const getSafeData = async (
   predictedSafeContract: GnosisSafe;
   createSafeTx: SafeTransaction;
 }> => {
+  if (!network.config.chainId) {
+    throw Error(`No chain ID found for: ${network.name}`)
+  }
+
   const gnosisFactory = getProxyFactoryDeployment({
     version: SAFE_VERSION,
-    network: CHAIN_ID.toString(),
+    network: network.config.chainId.toString(),
   });
   if (!gnosisFactory) throw new Error("Gnosis factory not found");
 
@@ -137,7 +154,7 @@ export const getSafeData = async (
 
   const gnosisSingleton = getSafeSingletonDeployment({
     version: SAFE_VERSION,
-    network: CHAIN_ID.toString(),
+    network: network.config.chainId.toString(),
   });
 
   if (!gnosisSingleton) throw new Error("Gnosis singleton not found");

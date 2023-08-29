@@ -21,7 +21,6 @@ export const deployDCNTAndLockRelease = async (
     await deployer.getAddress()
   );
   await dcntTokenContract.deployed();
-  console.log(`DCNTToken deployed to: ${dcntTokenContract.address}`);
 
   //
   // Deploy lock release factory
@@ -37,9 +36,6 @@ export const deployDCNTAndLockRelease = async (
     duration
   );
   await lockReleaseContract.deployed();
-  console.log(
-    `LockRelease contract deployed to: ${lockReleaseContract.address}`
-  );
 
   //
   // Transfer beneficiary total tokens to lock contract
@@ -52,7 +48,13 @@ export const deployDCNTAndLockRelease = async (
     totalLockedAmount
   );
   await tokenTransferTx.wait();
-  console.log(`Transferred ${totalLockedAmount} DCNT to LockRelease contract`);
+
+  console.log("Decent Token and Lock Release contracts deployed:");
+  console.table({
+    dcntTokenContract: dcntTokenContract.address,
+    lockReleaseContract: lockReleaseContract.address,
+    totalLockedAmount: totalLockedAmount.toString(),
+  });
 
   return {
     totalLockedAmount,

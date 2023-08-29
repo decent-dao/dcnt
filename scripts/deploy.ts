@@ -6,22 +6,18 @@ import { deployDCNTAndLockRelease } from "../DaoBuilder/dcntTokenDeploy";
 import { encodeMultiSend } from "../DaoBuilder/utils";
 import { decentDAOConfig } from "../DaoBuilder/dcntDAOConfig";
 import { utils } from "ethers";
-import { logDcntDaoTxt } from "./graphics/graphics";
+import { logDcntDaoTxt, logEthereumLogo } from "./graphics/graphics";
 
 async function createDAO() {
-
-  // Deploy DCNT Token
+  //
+  // Deploy DCNT Token & Lock Release Contracts
   const [deployer] = await ethers.getSigners();
   const { dcntTokenContract, lockReleaseContract, totalLockedAmount } =
     await deployDCNTAndLockRelease(deployer, decentDAOConfig);
 
-  console.log("Decent Token and Lock Release contracts deployed");
-  console.table({
-    dcntTokenContract: dcntTokenContract.address,
-    lockReleaseContract: lockReleaseContract.address,
-    totalLockedAmount: totalLockedAmount.toString(),
-  });
-
+  //
+  // Get predicted safe deployment address + transaction
+  // This transaction will deploy a new Gnosis safe
   const {
     zodiacModuleProxyFactoryContract,
     fractalAzoriusMasterCopyContract,
@@ -35,16 +31,10 @@ async function createDAO() {
     multisendContract
   );
 
-  console.log("Master copies fetched");
-  console.table({
-    zodiacModuleProxyFactoryContract: zodiacModuleProxyFactoryContract.address,
-    fractalAzoriusMasterCopyContract: fractalAzoriusMasterCopyContract.address,
-    fractalRegistryContract: fractalRegistryContract.address,
-    keyValuePairContract: keyValuePairContract.address,
-    linearVotingMasterCopyContract: linearVotingMasterCopyContract.address,
-    multisendContract: multisendContract.address,
-  });
-
+  //
+  // Build Token Voting Contract
+  // The Lock Release will act as the Token Voting Strategy
+  // The DCNT Token is the Token Voting Token
   const azoriusTxBuilder = new AzoriusTxBuilder(
     decentDAOConfig,
     predictedSafeContract,
@@ -58,8 +48,11 @@ async function createDAO() {
     linearVotingMasterCopyContract
   );
 
-  console.log("Azorius tx builder created");
-
+  //
+  // Setup Gnosis Safe creation TX
+  // With the internal TXs it should run post-deployment
+  // As well as the strategy (lock release) deployment TX +
+  // Token Voting module (Azorius)
   const txs = [createSafeTx];
   const internalTxs = [
     azoriusTxBuilder.buildUpdateDAONameTx(),
@@ -69,7 +62,7 @@ async function createDAO() {
     azoriusTxBuilder.buildAddAzoriusContractAsOwnerTx(),
     azoriusTxBuilder.buildRemoveMultiSendOwnerTx(),
   ];
-  console.log("Internal txs created");
+  console.log("Internal safe txs created");
 
   txs.push(azoriusTxBuilder.buildDeployStrategyTx());
   txs.push(azoriusTxBuilder.buildDeployAzoriusTx());
@@ -79,21 +72,22 @@ async function createDAO() {
       internalTxs
     )
   );
-  console.log("Tx created");
-
   const encodedTx = encodeMultiSend(txs);
 
-  console.time("Tx sent");
-  const execution = await multisendContract.multiSend(encodedTx, {
+  //
+  // Execute all transactions via multisend
+  const allTxsMultisendTx = await multisendContract.multiSend(encodedTx, {
     gasLimit: 5000000,
   });
-  execution.wait();
-  console.timeEnd(`tx executed ${execution.hash}`);
+  allTxsMultisendTx.wait();
+  console.timeEnd(`Multisend tx executed ${allTxsMultisendTx.hash}`);
 
   logDcntDaoTxt();
   console.table({ daoAddress: predictedSafeContract.address });
 
-  console.log("Transferring remaining balance of DCNT to Decent DAO");
+  //
+  // Transfer remaining unlocked DCNT supply to the DAO
+  // This is equal to total DCNT supply minus tokens held in lock contract
   const amountToTransfer = utils
     .parseEther(decentDAOConfig.initialSupply)
     .sub(totalLockedAmount);
@@ -101,56 +95,27 @@ async function createDAO() {
     predictedSafeContract.address,
     amountToTransfer
   );
-  tokenTransfer.wait();
-  console.log("Tokens transferred");
+  await tokenTransfer.wait();
 
+  console.log("DCNT Tokens transferred to Decent DAO:");
   console.table({
-    amountToTransfer: amountToTransfer,
+    amountToTransfer: ethers.utils.formatEther(amountToTransfer),
     hash: tokenTransfer.hash,
   });
 
-  console.log("Transferring token ownership to Decent DAO");
+  //
+  // Transfer ownership of the DCNT Token
+  // To the Decent DAO
   const transferTokenOwnership = await dcntTokenContract.transferOwnership(
     predictedSafeContract.address
   );
-  transferTokenOwnership.wait();
-  console.log("Token ownership transferred");
+  await transferTokenOwnership.wait();
+  console.log("DCNT Token ownership transferred to Decent DAO:");
   console.table({
     dao: predictedSafeContract.address,
     hash: transferTokenOwnership.hash,
   });
-  console.log(`
-      ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣠⣤⣴⣶⣶⣿⣿⣿⣿⣿⣿⣿⣿⣶⣶⣦⣤⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-      ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-      ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-      ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-      ⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⠀⠀⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀
-      ⠀⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⠀⠀⠀⠀⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀
-      ⠀⠀⠀⠀⠀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠁⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀⠀⠀⠀⠀
-      ⠀⠀⠀⢀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡀⠀⠀⠀
-      ⠀⠀⢀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡀⠀⠀
-      ⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠀⠀
-      ⠀⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⠀
-      ⢀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠁⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡀
-      ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀⢀⣠⣴⣶⠿⠟⠻⢿⣶⣤⣄⡀⠀⠀⠀⠀⠈⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇
-      ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⠀⠀⣀⣤⣶⡾⠿⠛⠉⠀⠀⠀⠀⠀⠀⠉⠛⠿⣷⣦⣄⣀⠀⠀⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷
-      ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣣⣤⣶⠿⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠻⢿⣶⣤⣹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-      ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-      ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⣷⣦⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣴⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿
-      ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄⠉⠻⢿⣶⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣾⡿⠛⠉⣠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇
-      ⠈⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⡀⠀⠈⠙⠿⣷⣦⣄⠀⠀⠀⠀⠀⠀⣠⣴⣾⠟⠋⠁⠀⢀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁
-      ⠀⢹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡄⠀⠀⠀⠀⠙⠻⢿⣶⣄⣤⣶⡿⠟⠉⠀⠀⠀⠀⣠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡏⠀
-      ⠀⠀⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀⠀⠀⠀⠀⠀⠈⠛⠋⠁⠀⠀⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠀⠀
-      ⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠁⠀⠀
-      ⠀⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠁⠀⠀⠀
-      ⠀⠀⠀⠀⠀⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡀⠀⠀⠀⠀⠀⠀⢠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀
-      ⠀⠀⠀⠀⠀⠀⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄⠀⠀⠀⠀⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀⠀⠀⠀
-      ⠀⠀⠀⠀⠀⠀⠀⠀⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⡀⢀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀⠀⠀⠀⠀⠀
-      ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-      ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-      ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-      ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠙⠛⠻⠿⠿⢿⣿⣿⣿⣿⣿⣿⡿⠿⠿⠟⠛⠋⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-      `);
+  logEthereumLogo();
 }
 
 createDAO()
