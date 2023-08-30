@@ -3,16 +3,20 @@ pragma solidity ^0.8.19;
 
 import { ERC20, ERC20Votes, ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import { IDCNTMintAuthorization } from "./mint/IDCNTMintAuthorization.sol";
 
 // @todo handle initial minting correctly. Can it be done inside the constructor?
 
 /// @notice the dcnt token
 contract DCNTToken is ERC20Votes, AccessControl {
+    IDCNTMintAuthorization public mintAuthorization;
     bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
+    error MintAuthorization();
 
-    constructor(uint256 _supply, address _owner) ERC20("Decent", "DCNT") ERC20Permit("Decent") {
+    constructor(uint256 _supply, address _owner, IDCNTMintAuthorization _mintAuthorization) ERC20("Decent", "DCNT") ERC20Permit("Decent") {
         _grantRole(MINT_ROLE, _owner);
         _mint(msg.sender, _supply);
+        mintAuthorization = _mintAuthorization;
     }
 
     /// @notice public function to be used for minting new tokens
@@ -20,6 +24,9 @@ contract DCNTToken is ERC20Votes, AccessControl {
     /// @param amount amount of tokens to mint
     /// @dev only accounts with `MINT_ROLE` (the DAO) are authorized to mint more tokens
     function mint(address dest, uint256 amount) external onlyRole(MINT_ROLE) {
+        if (!mintAuthorization.authorizeMint(dest, amount)) {
+            revert MintAuthorization();
+        }
         _mint(dest, amount);
     }
 

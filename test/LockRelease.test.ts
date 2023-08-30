@@ -7,6 +7,7 @@ import {
   DCNTToken__factory,
   LockRelease,
   LockRelease__factory,
+  UnlimitedMint__factory,
 } from "../typechain";
 
 import time from "./time";
@@ -32,7 +33,11 @@ describe("LockRelease", async function () {
     duration = 100;
 
     // Deploy DCNT token
-    dcnt = await new DCNTToken__factory(deployer).deploy(1000, owner.address);
+    dcnt = await new DCNTToken__factory(deployer).deploy(
+      1000,
+      owner.address,
+      (await new UnlimitedMint__factory(deployer).deploy()).address
+    );
   });
 
   describe("LockRelease Deployment", function () {

@@ -2,9 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { DCNTToken } from "../typechain";
-
-import time from "./time";
+import { DCNTToken, DCNTToken__factory, UnlimitedMint, UnlimitedMint__factory } from "../typechain";
 
 describe("DCNTToken", async function () {
   let owner: SignerWithAddress;
@@ -17,10 +15,11 @@ describe("DCNTToken", async function () {
   beforeEach(async function () {
     [owner, nonOwner] = await ethers.getSigners();
 
-    // Deploy token contract
-    const _DCNTToken = await ethers.getContractFactory("DCNTToken");
-    dcnt = await _DCNTToken.deploy(mintTotal, owner.address);
-    await dcnt.deployed();
+    dcnt = await new DCNTToken__factory(owner).deploy(
+      mintTotal,
+      owner.address,
+      (await new UnlimitedMint__factory(owner).deploy()).address
+    );
   });
 
   describe("Token features", function () {
