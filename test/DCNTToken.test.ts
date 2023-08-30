@@ -24,7 +24,7 @@ describe("DCNTToken", async function () {
   });
 
   describe("Token features", function () {
-    describe("Minting the correct amount of tokens", function () {
+    describe("Minting the correct amount of tokens at deployment", function () {
       let totalSupply: BigNumber;
 
       beforeEach(async function () {
@@ -78,9 +78,11 @@ describe("DCNTToken", async function () {
         });
 
         it("Should not allow non-owner to mint 1 wei", async function () {
+          const mintRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINT_ROLE'));
+
           await expect(
             dcnt.connect(nonOwner).mint(owner.address, oneWei)
-          ).to.be.revertedWith("Ownable: caller is not the owner");
+          ).to.be.revertedWith(`AccessControl: account ${nonOwner.address.toLowerCase()} is missing role ${mintRole}`);
         });
       });
     });
