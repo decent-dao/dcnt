@@ -11,10 +11,12 @@ import { IDCNTMintAuthorization } from "./mint/IDCNTMintAuthorization.sol";
 contract DCNTToken is ERC20Votes, AccessControl {
     IDCNTMintAuthorization public mintAuthorization;
     bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
+    bytes32 public constant UPDATE_MINT_AUTHORIZATION_ROLE = keccak256("UPDATE_MINT_AUTHORIZATION_ROLE");
     error MintAuthorization();
 
     constructor(uint256 _supply, address _owner, IDCNTMintAuthorization _mintAuthorization) ERC20("Decent", "DCNT") ERC20Permit("Decent") {
         _grantRole(MINT_ROLE, _owner);
+        _grantRole(UPDATE_MINT_AUTHORIZATION_ROLE, _owner);
         _mint(msg.sender, _supply);
         mintAuthorization = _mintAuthorization;
     }
@@ -33,5 +35,12 @@ contract DCNTToken is ERC20Votes, AccessControl {
     /// @notice holders can burn their own tokens
     function burn(uint256 amount) external {
         _burn(msg.sender, amount);
+    }
+
+    /// @notice public function to update contract used for mint authorization
+    /// @param newMintAuthorization address to use for the new mint authorization contract
+    /// @dev only accounts with `UPDATE_MINT_AUTHORIZATION_ROLE` (the DAO) are authorized to update mint authorization
+    function updateMintAuthorization(IDCNTMintAuthorization newMintAuthorization) external onlyRole(UPDATE_MINT_AUTHORIZATION_ROLE) {
+        mintAuthorization = newMintAuthorization;
     }
 }

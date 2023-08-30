@@ -85,5 +85,28 @@ describe("DCNTToken", async function () {
         });
       });
     });
+
+    describe("Updating the MintAuthorization contract", function () {
+      let newInstance: UnlimitedMint;
+
+      beforeEach(async function () {
+        newInstance = await new UnlimitedMint__factory(owner).deploy();
+      });
+
+      it("Should allow owner to update to a new instance", async function () {
+        await dcnt.updateMintAuthorization(newInstance.address);
+        expect(await dcnt.mintAuthorization()).to.eq(newInstance.address);
+      });
+
+      it("Should not allow non-owner to update to a new instance", async function () {
+        const updateMintAuthorizationRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('UPDATE_MINT_AUTHORIZATION_ROLE'));
+        const originalMintAuthorizationAddress = await dcnt.mintAuthorization();
+
+        await expect(
+          dcnt.connect(nonOwner).updateMintAuthorization(newInstance.address)
+        ).to.be.revertedWith(`AccessControl: account ${nonOwner.address.toLowerCase()} is missing role ${updateMintAuthorizationRole}`);
+        expect(await dcnt.mintAuthorization()).to.eq(originalMintAuthorizationAddress);
+      });
+    })
   });
 });
