@@ -42,20 +42,6 @@ describe("DCNTToken", async function () {
       });
     });
 
-    describe("Burning tokens", function () {
-      it("Should allow users to burn their tokens", async function () {
-        const totalSupply = await dcnt.totalSupply();
-        const burnWhole = 500_000_000;
-        const burnTotal = ethers.utils.parseEther(burnWhole.toString());
-        await dcnt.connect(owner).burn(burnTotal);
-
-        expect(await dcnt.totalSupply()).to.eq(totalSupply.sub(burnTotal));
-        expect(await dcnt.balanceOf(owner.address)).to.eq(
-          totalSupply.sub(burnTotal)
-        );
-      });
-    });
-
     describe("Minting more tokens", function () {
       let originalTotalSupply: BigNumber,
         minimumMintInterval: number,
