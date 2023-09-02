@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { DCNTToken, DCNTToken__factory, UnlimitedMint, UnlimitedMint__factory } from "../typechain";
+import { DCNTToken, DCNTToken__factory, UnlimitedMint, UnlimitedMint__factory, NoMint__factory } from "../typechain";
 
 describe("DCNTToken", async function () {
   let owner: SignerWithAddress;
@@ -82,6 +82,14 @@ describe("DCNTToken", async function () {
           await expect(
             dcnt.connect(nonOwner).mint(owner.address, oneWei)
           ).to.be.revertedWith(`AccessControl: account ${nonOwner.address.toLowerCase()} is missing role ${mintRole}`);
+        });
+      });
+
+      describe("When not authorized", function () {
+        it("Throws an error", async function () {
+          let noMint = await new NoMint__factory(owner).deploy();
+          await dcnt.updateMintAuthorization(noMint.address);
+          await expect(dcnt.mint(owner.address, 1)).to.be.revertedWith("UnauthorizedMint()");
         });
       });
     });

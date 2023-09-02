@@ -12,7 +12,7 @@ contract DCNTToken is ERC20Votes, AccessControl {
     IDCNTMintAuthorization public mintAuthorization;
     bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
     bytes32 public constant UPDATE_MINT_AUTHORIZATION_ROLE = keccak256("UPDATE_MINT_AUTHORIZATION_ROLE");
-    error MintAuthorization();
+    error UnauthorizedMint();
 
     constructor(uint256 _supply, address _owner, IDCNTMintAuthorization _mintAuthorization) ERC20("Decent", "DCNT") ERC20Permit("Decent") {
         _grantRole(MINT_ROLE, _owner);
@@ -27,7 +27,7 @@ contract DCNTToken is ERC20Votes, AccessControl {
     /// @dev only accounts with `MINT_ROLE` (the DAO) are authorized to mint more tokens
     function mint(address dest, uint256 amount) external onlyRole(MINT_ROLE) {
         if (!mintAuthorization.authorizeMint(dest, amount)) {
-            revert MintAuthorization();
+            revert UnauthorizedMint();
         }
         _mint(dest, amount);
     }
