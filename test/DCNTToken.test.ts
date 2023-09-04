@@ -42,7 +42,7 @@ describe("DCNTToken", async function () {
     });
 
     describe("Burning tokens", function () {
-      it("Should allow users to burn their tokens", async function () {
+      it("Should allow the MINT_ROLE to burn their own tokens", async function () {
         const totalSupply = await dcnt.totalSupply();
         const burnWhole = 500_000_000;
         const burnTotal = ethers.utils.parseEther(burnWhole.toString());
@@ -52,6 +52,13 @@ describe("DCNTToken", async function () {
         expect(await dcnt.balanceOf(owner.address)).to.eq(
           totalSupply.sub(burnTotal)
         );
+      });
+
+      it("Should not allow non-MINT_ROLE to burn their own tokens", async function () {
+        const mintRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINT_ROLE'));
+        const burnWhole = 1;
+        const burnTotal = ethers.utils.parseEther(burnWhole.toString());
+        await expect(dcnt.connect(nonOwner).burn(burnTotal)).to.be.revertedWith(`AccessControl: account ${nonOwner.address.toLowerCase()} is missing role ${mintRole}`);
       });
     });
 
