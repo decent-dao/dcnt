@@ -115,6 +115,25 @@ describe("DCNTToken", async function () {
         ).to.be.revertedWith(`AccessControl: account ${nonOwner.address.toLowerCase()} is missing role ${updateMintAuthorizationRole}`);
         expect(await dcnt.mintAuthorization()).to.eq(originalMintAuthorizationAddress);
       });
-    })
+    });
+
+    describe("Revoking roles and testing behavior", function () {
+      describe("Revoking the MINT_ROLE", function () {
+        it("Doesn't allow any more minting", async function () {
+          const mintRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINT_ROLE'));
+          await dcnt.renounceRole(mintRole, owner.address);
+          await expect(dcnt.mint(owner.address, 1)).to.be.revertedWith(`AccessControl: account ${owner.address.toLowerCase()} is missing role ${mintRole}`);
+        });
+      });
+
+      describe("Revoking the UPDATE_MINT_AUTHORIZATION_ROLE", function () {
+        it("Doesn't allow updating the mint authorization contract", async function () {
+          const updateMintAuthorizationRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('UPDATE_MINT_AUTHORIZATION_ROLE'));
+          await dcnt.renounceRole(updateMintAuthorizationRole, owner.address);
+          const newInstance = await new UnlimitedMint__factory(owner).deploy();
+          await expect(dcnt.updateMintAuthorization(newInstance.address)).to.be.revertedWith(`AccessControl: account ${owner.address.toLowerCase()} is missing role ${updateMintAuthorizationRole}`);
+        });
+      });
+    });
   });
 });
