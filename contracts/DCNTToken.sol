@@ -2,46 +2,46 @@
 pragma solidity ^0.8.19;
 
 import { ERC20, ERC20Votes, ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import { IDCNTMintAuthorization } from "./mint/IDCNTMintAuthorization.sol";
 
 // @todo handle initial minting correctly. Can it be done inside the constructor?
 
 /// @notice the dcnt token
-contract DCNTToken is ERC20Votes, Ownable {
-    uint128 public nextMint; // Timestamp
-    uint32 public constant MINIMUM_MINT_INTERVAL = 365 days;
-    uint8 public constant MINT_CAP_BPS = 200; // 2%
+contract DCNTToken is ERC20Votes, AccessControl {
+    IDCNTMintAuthorization public mintAuthorization;
+    bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
+    bytes32 public constant UPDATE_MINT_AUTHORIZATION_ROLE = keccak256("UPDATE_MINT_AUTHORIZATION_ROLE");
+    error UnauthorizedMint();
 
-    error MintExceedsMaximum();
-    error MintTooSoon();
-
-    /// @param _supply amount of tokens to mint at Token Generation Event
-    constructor(uint256 _supply, address _owner) ERC20("Decent", "DCNT") ERC20Permit("Decent") {
+    constructor(uint256 _supply, address _owner, IDCNTMintAuthorization _mintAuthorization) ERC20("Decent", "DCNT") ERC20Permit("Decent") {
+        _grantRole(MINT_ROLE, _owner);
+        _grantRole(UPDATE_MINT_AUTHORIZATION_ROLE, _owner);
         _mint(msg.sender, _supply);
-        nextMint = uint128(block.timestamp + MINIMUM_MINT_INTERVAL);
-        _transferOwnership(_owner);
+        mintAuthorization = _mintAuthorization;
     }
 
-    /// @notice mint can be called at most once every 365 days,
-    ///  and with an amount no more than 2% of the current supply
+    /// @notice public function to be used for minting new tokens
     /// @param dest address to assign newly minted tokens to
     /// @param amount amount of tokens to mint
-    /// @dev only the `owner` is authorized to mint more tokens
-    function mint(address dest, uint256 amount) external onlyOwner {
-        if (amount > (totalSupply() * MINT_CAP_BPS) / 10000) {
-            revert MintExceedsMaximum();
+    /// @dev only accounts with `MINT_ROLE` (the DAO) are authorized to mint more tokens
+    function mint(address dest, uint256 amount) external onlyRole(MINT_ROLE) {
+        if (!mintAuthorization.authorizeMint(dest, amount)) {
+            revert UnauthorizedMint();
         }
-
-        if (block.timestamp < nextMint) {
-            revert MintTooSoon();
-        }
-
-        nextMint = uint128(block.timestamp + MINIMUM_MINT_INTERVAL);
         _mint(dest, amount);
     }
 
-    /// @dev holders can burn their own tokens
-    function burn(uint256 amount) external {
+    /// @notice holders can burn their own tokens
+    /// @dev only accounts with `MINT_ROLE` (the DAO) are authorized to burn their tokens
+    function burn(uint256 amount) external onlyRole(MINT_ROLE) {
         _burn(msg.sender, amount);
+    }
+
+    /// @notice public function to update contract used for mint authorization
+    /// @param newMintAuthorization address to use for the new mint authorization contract
+    /// @dev only accounts with `UPDATE_MINT_AUTHORIZATION_ROLE` (the DAO) are authorized to update mint authorization
+    function updateMintAuthorization(IDCNTMintAuthorization newMintAuthorization) external onlyRole(UPDATE_MINT_AUTHORIZATION_ROLE) {
+        mintAuthorization = newMintAuthorization;
     }
 }

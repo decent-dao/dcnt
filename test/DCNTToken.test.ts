@@ -2,9 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { DCNTToken } from "../typechain";
-
-import time from "./time";
+import { DCNTToken, DCNTToken__factory, UnlimitedMint, UnlimitedMint__factory, NoMint__factory } from "../typechain";
 
 describe("DCNTToken", async function () {
   let owner: SignerWithAddress;
@@ -17,14 +15,15 @@ describe("DCNTToken", async function () {
   beforeEach(async function () {
     [owner, nonOwner] = await ethers.getSigners();
 
-    // Deploy token contract
-    const _DCNTToken = await ethers.getContractFactory("DCNTToken");
-    dcnt = await _DCNTToken.deploy(mintTotal, owner.address);
-    await dcnt.deployed();
+    dcnt = await new DCNTToken__factory(owner).deploy(
+      mintTotal,
+      owner.address,
+      (await new UnlimitedMint__factory(owner).deploy()).address
+    );
   });
 
   describe("Token features", function () {
-    describe("Minting the correct amount of tokens", function () {
+    describe("Minting the correct amount of tokens at deployment", function () {
       let totalSupply: BigNumber;
 
       beforeEach(async function () {
@@ -43,7 +42,7 @@ describe("DCNTToken", async function () {
     });
 
     describe("Burning tokens", function () {
-      it("Should allow users to burn their tokens", async function () {
+      it("Should allow the MINT_ROLE to burn their own tokens", async function () {
         const totalSupply = await dcnt.totalSupply();
         const burnWhole = 500_000_000;
         const burnTotal = ethers.utils.parseEther(burnWhole.toString());
@@ -54,24 +53,20 @@ describe("DCNTToken", async function () {
           totalSupply.sub(burnTotal)
         );
       });
+
+      it("Should not allow non-MINT_ROLE to burn their own tokens", async function () {
+        const mintRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINT_ROLE'));
+        const burnWhole = 1;
+        const burnTotal = ethers.utils.parseEther(burnWhole.toString());
+        await expect(dcnt.connect(nonOwner).burn(burnTotal)).to.be.revertedWith(`AccessControl: account ${nonOwner.address.toLowerCase()} is missing role ${mintRole}`);
+      });
     });
 
     describe("Minting more tokens", function () {
-      let originalTotalSupply: BigNumber,
-        minimumMintInterval: number,
-        mintCapBPs: number,
-        nextMint: BigNumber;
+      let originalTotalSupply: BigNumber;
 
       beforeEach(async function () {
-        [originalTotalSupply, minimumMintInterval, mintCapBPs, nextMint] =
-          await Promise.all([
-            dcnt.totalSupply(),
-            dcnt.MINIMUM_MINT_INTERVAL(),
-            dcnt.MINT_CAP_BPS(),
-            dcnt.nextMint(),
-          ]);
-
-        await time.increaseTo(nextMint.toNumber());
+        originalTotalSupply = await dcnt.totalSupply();
       });
 
       describe("Depending on the caller address", function () {
@@ -89,63 +84,61 @@ describe("DCNTToken", async function () {
         });
 
         it("Should not allow non-owner to mint 1 wei", async function () {
+          const mintRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINT_ROLE'));
+
           await expect(
             dcnt.connect(nonOwner).mint(owner.address, oneWei)
-          ).to.be.revertedWith("Ownable: caller is not the owner");
+          ).to.be.revertedWith(`AccessControl: account ${nonOwner.address.toLowerCase()} is missing role ${mintRole}`);
         });
       });
 
-      describe("Depending on the amount", function () {
-        let maxToMint: BigNumber;
-
-        beforeEach(async function () {
-          // calculate the max amount of tokens that can be minted
-          maxToMint = originalTotalSupply.mul(mintCapBPs).div(10000);
+      describe("When not authorized", function () {
+        it("Throws an error", async function () {
+          let noMint = await new NoMint__factory(owner).deploy();
+          await dcnt.updateMintAuthorization(noMint.address);
+          await expect(dcnt.mint(owner.address, 1)).to.be.revertedWith("UnauthorizedMint()");
         });
+      });
+    });
 
-        describe("Max mint amount", function () {
-          it("Should allow the owner to mint more tokens", async function () {
-            await dcnt.mint(owner.address, maxToMint);
-            expect(await dcnt.totalSupply()).to.eq(
-              originalTotalSupply.add(maxToMint)
-            );
-          });
-        });
+    describe("Updating the MintAuthorization contract", function () {
+      let newInstance: UnlimitedMint;
 
-        describe("Over max mint amount", function () {
-          let overMaxToMint: BigNumber;
+      beforeEach(async function () {
+        newInstance = await new UnlimitedMint__factory(owner).deploy();
+      });
 
-          beforeEach(function () {
-            overMaxToMint = maxToMint.add(1);
-          });
+      it("Should allow owner to update to a new instance", async function () {
+        await dcnt.updateMintAuthorization(newInstance.address);
+        expect(await dcnt.mintAuthorization()).to.eq(newInstance.address);
+      });
 
-          it("Should not allow the owner to mint more tokens", async function () {
-            await expect(
-              dcnt.mint(owner.address, overMaxToMint)
-            ).to.be.revertedWith("MintExceedsMaximum()");
-          });
+      it("Should not allow non-owner to update to a new instance", async function () {
+        const updateMintAuthorizationRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('UPDATE_MINT_AUTHORIZATION_ROLE'));
+        const originalMintAuthorizationAddress = await dcnt.mintAuthorization();
+
+        await expect(
+          dcnt.connect(nonOwner).updateMintAuthorization(newInstance.address)
+        ).to.be.revertedWith(`AccessControl: account ${nonOwner.address.toLowerCase()} is missing role ${updateMintAuthorizationRole}`);
+        expect(await dcnt.mintAuthorization()).to.eq(originalMintAuthorizationAddress);
+      });
+    });
+
+    describe("Revoking roles and testing behavior", function () {
+      describe("Revoking the MINT_ROLE", function () {
+        it("Doesn't allow any more minting", async function () {
+          const mintRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINT_ROLE'));
+          await dcnt.renounceRole(mintRole, owner.address);
+          await expect(dcnt.mint(owner.address, 1)).to.be.revertedWith(`AccessControl: account ${owner.address.toLowerCase()} is missing role ${mintRole}`);
         });
       });
 
-      describe("Depending on the time", function () {
-        beforeEach(async function () {
-          // dummy mint to set the timeout interval
-          await dcnt.mint(owner.address, 0);
-        });
-
-        it("Should not allow the owner to mint after having just minted", async function () {
-          await expect(dcnt.mint(owner.address, 1)).to.be.revertedWith(
-            "MintTooSoon()"
-          );
-        });
-
-        it("Should allow the owner to mint after the minimum mint interval", async function () {
-          await time.increase(minimumMintInterval);
-          const toMint = 1;
-          await dcnt.mint(owner.address, toMint);
-          expect(await dcnt.totalSupply()).to.eq(
-            originalTotalSupply.add(toMint)
-          );
+      describe("Revoking the UPDATE_MINT_AUTHORIZATION_ROLE", function () {
+        it("Doesn't allow updating the mint authorization contract", async function () {
+          const updateMintAuthorizationRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('UPDATE_MINT_AUTHORIZATION_ROLE'));
+          await dcnt.renounceRole(updateMintAuthorizationRole, owner.address);
+          const newInstance = await new UnlimitedMint__factory(owner).deploy();
+          await expect(dcnt.updateMintAuthorization(newInstance.address)).to.be.revertedWith(`AccessControl: account ${owner.address.toLowerCase()} is missing role ${updateMintAuthorizationRole}`);
         });
       });
     });
