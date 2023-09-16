@@ -2,7 +2,7 @@ import { DecentDAOConfig } from "./types";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { DCNTToken, LockRelease, UnlimitedMint__factory } from "../typechain";
+import { DCNTToken, LockRelease, NoMint__factory } from "../typechain";
 
 export const deployDCNTAndLockRelease = async (
   deployer: SignerWithAddress,
@@ -20,7 +20,7 @@ export const deployDCNTAndLockRelease = async (
     ethers.utils.parseEther(decentDAOConfig.initialSupply),
     await deployer.getAddress(),
     (
-      await new UnlimitedMint__factory(deployer).deploy()
+      await new NoMint__factory(deployer).deploy()
     ).address
   );
   await dcntTokenContract.deployed();
