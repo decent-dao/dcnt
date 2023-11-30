@@ -1,9 +1,9 @@
 import { DecentDAOConfig } from "../DaoBuilder/types";
 import { beneficiaries } from "./beneficiaries";
 
-// @note 1 block = ~15 seconds
-// @note 1 day = 5760 blocks
-// @note 1 week = 40320 blocks
+// @note 1 block = 12 seconds
+// @note 1 day = 7200 blocks
+// @note 1 week = 50400 blocks
 
 const ONE_YEAR = 365 * 24 * 60 * 60;
 const NOW = Math.floor(Date.now() / 1000);
