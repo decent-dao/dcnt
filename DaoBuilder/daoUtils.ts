@@ -163,14 +163,14 @@ export const getSafeData = async (
 
   const createGnosisCalldata =
     gnosisSafeSingletonContract.interface.encodeFunctionData("setup", [
-      signers,
+      signers, // owners
       1, // threshold
-      AddressZero,
-      HashZero,
-      AddressZero,
-      AddressZero,
-      0,
-      AddressZero,
+      AddressZero, // to
+      HashZero, // data
+      AddressZero, // fallback handler
+      AddressZero, // payment token
+      0, // payment
+      AddressZero, // payment receiver
     ]);
 
   const predictedGnosisSafeAddress = getCreate2Address(
