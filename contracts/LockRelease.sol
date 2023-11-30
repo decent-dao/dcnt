@@ -22,8 +22,6 @@ contract LockRelease is Votes {
     uint128 public immutable start; // start timestamp of the release schedule
     uint128 public immutable duration; // duration of the release schedule in seconds
 
-    address[] private beneficiaries; // list of beneficiaries
-
     /** Represents a release schedule for a specific beneficiary. */
     mapping(address => Schedule) private schedules;
 
@@ -92,7 +90,6 @@ contract LockRelease is Votes {
         token = _token;
         start = _start;
         duration = _duration;
-        beneficiaries = _beneficiaries;
 
         emit ScheduleStarted(
             _token,
