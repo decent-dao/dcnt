@@ -36,7 +36,9 @@ describe("LockRelease", async function () {
     dcnt = await new DCNTToken__factory(deployer).deploy(
       1000,
       owner.address,
-      (await new UnlimitedMint__factory(deployer).deploy()).address
+      (await new UnlimitedMint__factory(deployer).deploy()).address,
+      "Test Token",
+      "TEST"
     );
   });
 

@@ -2,6 +2,8 @@ import { DecentDAOConfig } from './../DaoBuilder/types';
 import { ethers } from "ethers";
 
 export const decentTestConfig: DecentDAOConfig = {
+  tokenName: "Test Token",
+  tokenSymbol: "TEST",
   name: "Decent DAO",
   unlockStart: Math.floor(Date.now() / 1000), // Start time of token unlock (now)
   unlockDuration: 60, // duration of linear token unlock

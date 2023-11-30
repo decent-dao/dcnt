@@ -1,9 +1,9 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
-import { ERC20, ERC20Votes, ERC20Permit } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { IDCNTMintAuthorization } from "./mint/IDCNTMintAuthorization.sol";
+import {ERC20, ERC20Votes, ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {IDCNTMintAuthorization} from "./mint/IDCNTMintAuthorization.sol";
 
 /// @notice the dcnt token
 contract DCNTToken is ERC20Votes, AccessControl {
@@ -12,7 +12,13 @@ contract DCNTToken is ERC20Votes, AccessControl {
     bytes32 public constant UPDATE_MINT_AUTHORIZATION_ROLE = keccak256("UPDATE_MINT_AUTHORIZATION_ROLE");
     error UnauthorizedMint();
 
-    constructor(uint256 _supply, address _owner, IDCNTMintAuthorization _mintAuthorization) ERC20("Decent", "DCNT") ERC20Permit("Decent") {
+    constructor(
+        uint256 _supply,
+        address _owner,
+        IDCNTMintAuthorization _mintAuthorization,
+        string memory _name,
+        string memory _symbol
+    ) ERC20(_name, _symbol) ERC20Permit(_name) {
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);
         _mint(msg.sender, _supply);
         mintAuthorization = _mintAuthorization;

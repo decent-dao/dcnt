@@ -9,6 +9,10 @@ const ONE_YEAR = 365 * 24 * 60 * 60;
 const NOW = Math.floor(Date.now() / 1000);
 
 export const decentDAOConfig: DecentDAOConfig = {
+  // name of the Token
+  tokenName: "Decent",
+  // symbol of the Token
+  tokenSymbol: "DCNT",
   // name of the DAO
   name: "Decent DAO",
   // Lock Release | start timestamp of the release schedule

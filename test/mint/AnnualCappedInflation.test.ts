@@ -14,7 +14,9 @@ describe("AnnualCappedInflation", async function () {
     const dcnt = await new DCNTToken__factory(deployer).deploy(
       ethers.utils.parseEther("1000"),
       dao.address,
-      (await new UnlimitedMint__factory(deployer).deploy()).address
+      (await new UnlimitedMint__factory(deployer).deploy()).address,
+      "Test Token",
+      "TEST"
     );
     await dcnt.connect(dao).grantRole(updateMintAuthorizationRole, dao.address);
     const currentTime = await time.latest()

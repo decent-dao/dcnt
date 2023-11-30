@@ -26,7 +26,9 @@ export const deployDCNTAndLockRelease = async (
   const dcntTokenContract = await new DCNTToken__factory(deployer).deploy(
     ethers.utils.parseEther(decentDAOConfig.initialSupply),
     deployer.address,
-    noMintInstance.address
+    noMintInstance.address,
+    decentDAOConfig.tokenName,
+    decentDAOConfig.tokenSymbol
   );
   await dcntTokenContract.deployed();
 

@@ -21,7 +21,9 @@ describe("DCNTToken", async function () {
     dcnt = await new DCNTToken__factory(owner).deploy(
       mintTotal,
       owner.address,
-      (await new UnlimitedMint__factory(owner).deploy()).address
+      (await new UnlimitedMint__factory(owner).deploy()).address,
+      "Test Token",
+      "TEST"
     );
   });
 

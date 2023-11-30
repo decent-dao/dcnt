@@ -22,6 +22,8 @@ export interface SafeSignature {
 }
 
 export interface DecentDAOConfig {
+  tokenName: string;
+  tokenSymbol: string;
   name: string;
   unlockStart: number;
   unlockDuration: number;
