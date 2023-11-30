@@ -3,9 +3,9 @@ import { ethers } from "ethers";
 
 export const decentTestConfig: DecentDAOConfig = {
   name: "Decent DAO",
-  lockStart: Math.floor(Date.now() / 1000), // (Now) Start time of token lock
-  lockDuration: 60, // 60 seconds
-  snapshotURL: "https://snapshot.org/#/decentdao.eth",
+  unlockStart: Math.floor(Date.now() / 1000), // Start time of token unlock (now)
+  unlockDuration: 60, // duration of linear token unlock
+  snapshotENS: "decentdao.eth",
   initialSupply: "10",
   votingPeriod: 2, // Length of time (in blocks) that voting occurs.
   quorum: 4, // Percentage of total possible tokens that must vote in order to consider a proposal result valid.  We should take into account that a large portion of tokens will be locked for investors, who may never vote.

@@ -12,11 +12,11 @@ export const decentDAOConfig: DecentDAOConfig = {
   // name of the DAO
   name: "Decent DAO",
   // Lock Release | start timestamp of the release schedule
-  lockStart: NOW, // (seconds)
+  unlockStart: NOW, // (seconds)
   // Lock Release | duration of the release schedule in seconds
-  lockDuration: ONE_YEAR, // (seconds)
+  unlockDuration: ONE_YEAR, // (seconds)
   // Snapshot | url of the snapshot page
-  snapshotURL: "https://snapshot.org/#/decent-dao.eth",
+  snapshotENS: "decent-dao.eth",
   // DCNT Token | initial supply of the token
   initialSupply: "100", // (+18 decimals)
   // Linear Strategy |  Length of time that voting occurs

@@ -33,8 +33,8 @@ export const deployDCNTAndLockRelease = async (
   //
   // Deploy lock release factory
   // Sets up voting power prior to DCNT tokens being transferred
-  const start = decentDAOConfig.lockStart;
-  const duration = decentDAOConfig.lockDuration;
+  const start = decentDAOConfig.unlockStart;
+  const duration = decentDAOConfig.unlockDuration;
   const lockReleaseContract = await new LockRelease__factory(deployer).deploy(
     dcntTokenContract.address,
     decentDAOConfig.beneficiaries.map((a) => a.address),
