@@ -5,8 +5,6 @@ import { ERC20, ERC20Votes, ERC20Permit } from "@openzeppelin/contracts/token/ER
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { IDCNTMintAuthorization } from "./mint/IDCNTMintAuthorization.sol";
 
-// @todo handle initial minting correctly. Can it be done inside the constructor?
-
 /// @notice the dcnt token
 contract DCNTToken is ERC20Votes, AccessControl {
     IDCNTMintAuthorization public mintAuthorization;
@@ -15,8 +13,7 @@ contract DCNTToken is ERC20Votes, AccessControl {
     error UnauthorizedMint();
 
     constructor(uint256 _supply, address _owner, IDCNTMintAuthorization _mintAuthorization) ERC20("Decent", "DCNT") ERC20Permit("Decent") {
-        _grantRole(MINT_ROLE, _owner);
-        _grantRole(UPDATE_MINT_AUTHORIZATION_ROLE, _owner);
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
         _mint(msg.sender, _supply);
         mintAuthorization = _mintAuthorization;
     }

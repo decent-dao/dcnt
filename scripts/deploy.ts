@@ -100,17 +100,31 @@ async function createDAO() {
   });
 
   //
-  // Transfer ownership of the DCNT Token
-  // To the Decent DAO
-  const transferTokenOwnership = await dcntTokenContract.transferOwnership(
+  // Assign MINT ability of the DCNT Token to the Decent DAO
+  const transferTokenMintOwnership = await dcntTokenContract.grantRole(
+    ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MINT_ROLE")),
     predictedSafeContract.address
   );
-  await transferTokenOwnership.wait();
-  console.log("DCNT Token ownership transferred to Decent DAO:");
-  console.table({
-    dao: predictedSafeContract.address,
-    hash: transferTokenOwnership.hash,
-  });
+  await transferTokenMintOwnership.wait();
+  console.log("DCNT Token MINT ownership added to Decent DAO.");
+
+  // Assign UPDATE_MINT_AUTHORIZATION_ROLE ability of the DCNT Token to the Decent DAO
+  const transferTokenUpdateMintOwnership = await dcntTokenContract.grantRole(
+    ethers.utils.keccak256(
+      ethers.utils.toUtf8Bytes("UPDATE_MINT_AUTHORIZATION_ROLE")
+    ),
+    predictedSafeContract.address
+  );
+  await transferTokenUpdateMintOwnership.wait();
+  console.log("DCNT Token UPDATE MINT ownership added to Decent DAO.");
+
+  // Revoke DEFAULT_ADMIN_ROLE of the DCNT Token from the deployer
+  const renounceMintFromDeployer = await dcntTokenContract.renounceRole(
+    ethers.utils.keccak256(ethers.utils.toUtf8Bytes("DEFAULT_ADMIN_ROLE")),
+    deployer.address
+  );
+  await renounceMintFromDeployer.wait();
+  console.log("DCNT Token DEFAULT_ADMIN_ROLE renounced from deployer.");
 }
 
 createDAO()

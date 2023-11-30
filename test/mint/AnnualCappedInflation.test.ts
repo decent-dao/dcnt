@@ -6,6 +6,8 @@ import { AnnualCappedInflation__factory, DCNTToken__factory, UnlimitedMint__fact
 import time from "../time";
 import { loadFixture } from "ethereum-waffle";
 
+const updateMintAuthorizationRole = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('UPDATE_MINT_AUTHORIZATION_ROLE'));
+
 describe("AnnualCappedInflation", async function () {
   async function deployAnnualCappedInflation() {
     const [deployer, dao] = await ethers.getSigners();
@@ -14,6 +16,7 @@ describe("AnnualCappedInflation", async function () {
       dao.address,
       (await new UnlimitedMint__factory(deployer).deploy()).address
     );
+    await dcnt.connect(dao).grantRole(updateMintAuthorizationRole, dao.address);
     const currentTime = await time.latest()
     const annualCappedInflation = await new AnnualCappedInflation__factory(deployer).deploy(dcnt.address, currentTime + 100, dao.address);
     await dcnt.connect(dao).updateMintAuthorization(annualCappedInflation.address);

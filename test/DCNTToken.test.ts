@@ -45,6 +45,10 @@ describe("DCNTToken", async function () {
     });
 
     describe("Burning tokens", function () {
+      beforeEach(async function () {
+        await dcnt.grantRole(mintRole, owner.address);
+      });
+
       it("Should allow the MINT_ROLE to burn their own tokens", async function () {
         const totalSupply = await dcnt.totalSupply();
         const burnWhole = 500_000_000;
@@ -69,6 +73,7 @@ describe("DCNTToken", async function () {
 
       beforeEach(async function () {
         originalTotalSupply = await dcnt.totalSupply();
+        await dcnt.grantRole(mintRole, owner.address);
       });
 
       describe("Depending on the caller address", function () {
@@ -93,6 +98,12 @@ describe("DCNTToken", async function () {
       });
 
       describe("When not authorized", function () {
+        beforeEach(async function () {
+          // owner needs to be able to perform mint authorization updates,
+          // to install the NoMint contract.
+          await dcnt.grantRole(updateMintAuthorizationRole, owner.address);
+        });
+
         it("Throws an error", async function () {
           let noMint = await new NoMint__factory(owner).deploy();
           await dcnt.updateMintAuthorization(noMint.address);
@@ -109,6 +120,7 @@ describe("DCNTToken", async function () {
       });
 
       it("Should allow owner to update to a new instance", async function () {
+        await dcnt.grantRole(updateMintAuthorizationRole, owner.address);
         await dcnt.updateMintAuthorization(newInstance.address);
         expect(await dcnt.mintAuthorization()).to.eq(newInstance.address);
       });
