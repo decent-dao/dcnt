@@ -95,25 +95,17 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
     );
   }
 
-  public buildAddAzoriusContractAsOwnerTx(): SafeTransaction {
+  public buildSwapOwnersTx(): SafeTransaction {
     if (!this.predictedSafeContract) throw new Error("Safe contract not set");
     if (!this.azoriusContract) throw new Error("Azorius contract not set");
     return buildContractCall(
       this.predictedSafeContract,
-      "addOwnerWithThreshold",
-      [this.azoriusContract.address, 1],
-      0,
-      false
-    );
-  }
-
-  public buildRemoveMultiSendOwnerTx(): SafeTransaction {
-    if (!this.predictedSafeContract) throw new Error("Safe contract not set");
-    if (!this.azoriusContract) throw new Error("Azorius contract not set");
-    return buildContractCall(
-      this.predictedSafeContract,
-      "removeOwner",
-      [this.azoriusContract.address, this.multiSendContract.address, 1],
+      "swapOwner",
+      [
+        "0x0000000000000000000000000000000000000001",
+        this.multiSendContract.address,
+        "0x000000000000000000000000000000000f2ac7a1",
+      ],
       0,
       false
     );

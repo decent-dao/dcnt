@@ -57,8 +57,7 @@ async function createDAO() {
     azoriusTxBuilder.buildUpdateDAOSnapshotURLTx(),
     azoriusTxBuilder.buildLinearVotingContractSetupTx(),
     azoriusTxBuilder.buildEnableAzoriusModuleTx(),
-    azoriusTxBuilder.buildAddAzoriusContractAsOwnerTx(),
-    azoriusTxBuilder.buildRemoveMultiSendOwnerTx(),
+    azoriusTxBuilder.buildSwapOwnersTx(),
   ];
   console.log("Internal safe txs created");
 
