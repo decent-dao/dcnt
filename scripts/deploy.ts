@@ -9,14 +9,7 @@ import { utils } from "ethers";
 
 async function createDAO() {
   //
-  // Deploy DCNT Token & Lock Release Contracts
-  const [deployer] = await ethers.getSigners();
-  const { dcntTokenContract, lockReleaseContract, totalLockedAmount } =
-    await deployDCNTAndLockRelease(deployer, decentDAOConfig);
-
-  //
-  // Get predicted safe deployment address + transaction
-  // This transaction will deploy a new Gnosis safe
+  // Get addresses for various master contracts needed in deployment
   const {
     zodiacModuleProxyFactoryContract,
     fractalAzoriusMasterCopyContract,
@@ -25,6 +18,12 @@ async function createDAO() {
     linearVotingMasterCopyContract,
     multisendContract,
   } = await getMasterCopies();
+
+  //
+  // Deploy DCNT Token & Lock Release Contracts
+  const [deployer] = await ethers.getSigners();
+  const { dcntTokenContract, lockReleaseContract, totalLockedAmount } =
+    await deployDCNTAndLockRelease(deployer, decentDAOConfig);
 
   const { predictedSafeContract, createSafeTx } = await getSafeData(
     multisendContract
