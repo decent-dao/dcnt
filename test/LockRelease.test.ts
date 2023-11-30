@@ -193,12 +193,6 @@ describe("LockRelease", async function () {
       expect(await dcnt.getVotes(beneficiary3.address)).to.eq(0);
       expect(await dcnt.getVotes(beneficiary4.address)).to.eq(0);
 
-      expect(await lockRelease.getBeneficiaries()).to.deep.eq([
-        beneficiary1.address,
-        beneficiary2.address,
-        beneficiary3.address,
-        beneficiary4.address,
-      ]);
       expect(await lockRelease.getTotal(beneficiary1.address)).to.eq(100);
       expect(await lockRelease.getTotal(beneficiary2.address)).to.eq(200);
       expect(await lockRelease.getTotal(beneficiary3.address)).to.eq(300);
@@ -218,11 +212,6 @@ describe("LockRelease", async function () {
       expect(await lockRelease.getReleasable(beneficiary2.address)).to.eq(0);
       expect(await lockRelease.getReleasable(beneficiary3.address)).to.eq(0);
       expect(await lockRelease.getReleasable(beneficiary4.address)).to.eq(0);
-
-      expect(await lockRelease.getPending(beneficiary1.address)).to.eq(100);
-      expect(await lockRelease.getPending(beneficiary2.address)).to.eq(200);
-      expect(await lockRelease.getPending(beneficiary3.address)).to.eq(300);
-      expect(await lockRelease.getPending(beneficiary4.address)).to.eq(400);
 
       expect(await lockRelease.delegates(beneficiary1.address)).to.eq(
         beneficiary1.address
@@ -273,11 +262,6 @@ describe("LockRelease", async function () {
       expect(await lockRelease.getReleasable(beneficiary2.address)).to.eq(20);
       expect(await lockRelease.getReleasable(beneficiary3.address)).to.eq(30);
       expect(await lockRelease.getReleasable(beneficiary4.address)).to.eq(40);
-
-      expect(await lockRelease.getPending(beneficiary1.address)).to.eq(100);
-      expect(await lockRelease.getPending(beneficiary2.address)).to.eq(200);
-      expect(await lockRelease.getPending(beneficiary3.address)).to.eq(300);
-      expect(await lockRelease.getPending(beneficiary4.address)).to.eq(400);
 
       expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(100);
       expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(200);
@@ -468,27 +452,6 @@ describe("LockRelease", async function () {
           .sub(beneficiary4Released2)
       );
 
-      expect(await lockRelease.getPending(beneficiary1.address)).to.eq(
-        BigNumber.from(100)
-          .sub(beneficiary1Released1)
-          .sub(beneficiary1Released2)
-      );
-      expect(await lockRelease.getPending(beneficiary2.address)).to.eq(
-        BigNumber.from(200)
-          .sub(beneficiary2Released1)
-          .sub(beneficiary2Released2)
-      );
-      expect(await lockRelease.getPending(beneficiary3.address)).to.eq(
-        BigNumber.from(300)
-          .sub(beneficiary3Released1)
-          .sub(beneficiary3Released2)
-      );
-      expect(await lockRelease.getPending(beneficiary4.address)).to.eq(
-        BigNumber.from(400)
-          .sub(beneficiary4Released1)
-          .sub(beneficiary4Released2)
-      );
-
       expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(100);
       expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(200);
       expect(await lockRelease.getVotes(beneficiary3.address)).to.eq(300);
@@ -536,11 +499,6 @@ describe("LockRelease", async function () {
       expect(await lockRelease.getReleasable(beneficiary2.address)).to.eq(0);
       expect(await lockRelease.getReleasable(beneficiary3.address)).to.eq(0);
       expect(await lockRelease.getReleasable(beneficiary4.address)).to.eq(0);
-
-      expect(await lockRelease.getPending(beneficiary1.address)).to.eq(0);
-      expect(await lockRelease.getPending(beneficiary2.address)).to.eq(0);
-      expect(await lockRelease.getPending(beneficiary3.address)).to.eq(0);
-      expect(await lockRelease.getPending(beneficiary4.address)).to.eq(0);
 
       expect(await lockRelease.getVotes(beneficiary1.address)).to.eq(100);
       expect(await lockRelease.getVotes(beneficiary2.address)).to.eq(200);

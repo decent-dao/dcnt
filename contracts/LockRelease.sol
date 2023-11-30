@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.19;
 
-import {ILockRelease} from "./ILockRelease.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -10,7 +9,7 @@ import {Votes, IERC5805, EIP712} from "@openzeppelin/contracts/governance/utils/
 /**
  * This contract creates token release schedules to linearly release those tokens over the defined duration.
  */
-contract LockRelease is ILockRelease, Votes {
+contract LockRelease is Votes {
     using SafeERC20 for IERC20;
 
     /** Represents a release schedule for a specific beneficiary. */
@@ -124,14 +123,6 @@ contract LockRelease is ILockRelease, Votes {
         emit TokensReleased(msg.sender, releasable);
     }
 
-    /** Returns the beneficiaries.
-     *
-     * @return address[] array of beneficiary addresses
-     */
-    function getBeneficiaries() external view returns (address[] memory) {
-        return beneficiaries;
-    }
-
     /** Returns the total tokens that will be released to the beneficiary over the duration.
      *
      * @param _beneficiary address of the beneficiary
@@ -139,15 +130,6 @@ contract LockRelease is ILockRelease, Votes {
      */
     function getTotal(address _beneficiary) external view returns (uint256) {
         return schedules[_beneficiary].total;
-    }
-
-    /** Returns the total tokens yet to be released to the beneficiary over the total duration.
-     *
-     * @param _beneficiary address of the beneficiary
-     * @return uint256 total tokens yet to be released to the beneficiary
-     */
-    function getPending(address _beneficiary) external view returns (uint256) {
-        return schedules[_beneficiary].total - schedules[_beneficiary].released;
     }
 
     /** Returns the total tokens already released to the beneficiary.
