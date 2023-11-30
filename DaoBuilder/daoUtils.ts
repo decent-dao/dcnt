@@ -18,6 +18,7 @@ import {
   getMultiSendCallOnlyDeployment,
   getProxyFactoryDeployment,
   getSafeL2SingletonDeployment,
+  getCompatibilityFallbackHandlerDeployment,
 } from "@safe-global/safe-deployments";
 const { AddressZero, HashZero } = ethers.constants;
 
@@ -158,6 +159,15 @@ export const getSafeData = async (
     gnosisSingleton.defaultAddress
   )) as GnosisSafe;
 
+  const compatibilityFallbackHandlerSingleton =
+    getCompatibilityFallbackHandlerDeployment({
+      version: SAFE_VERSION,
+      network: network.config.chainId.toString(),
+    });
+
+  if (!compatibilityFallbackHandlerSingleton)
+    throw new Error("Compatibility Fallback Handler singleton not found");
+
   // multisend contract is the only signer; this is removed later
   const signers = [multiSendContract.address];
 
@@ -167,7 +177,7 @@ export const getSafeData = async (
       1, // threshold
       AddressZero, // to
       HashZero, // data
-      AddressZero, // fallback handler
+      compatibilityFallbackHandlerSingleton.defaultAddress, // fallback handler
       AddressZero, // payment token
       0, // payment
       AddressZero, // payment receiver
