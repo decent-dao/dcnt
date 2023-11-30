@@ -27,15 +27,9 @@ export const SAFE_VERSION = "1.3.0";
 async function getFractalContractAddressesByNetworkName() {
   const contractsPath = `@fractal-framework/fractal-contracts/deployments/${network.name}`;
 
-  const Azorius = await import(
-    `${contractsPath}/Azorius.json`
-  );
-  const FractalRegistry = await import(
-    `${contractsPath}/FractalRegistry.json`
-  );
-  const KeyValuePairs = await import(
-    `${contractsPath}/KeyValuePairs.json`
-  );
+  const Azorius = await import(`${contractsPath}/Azorius.json`);
+  const FractalRegistry = await import(`${contractsPath}/FractalRegistry.json`);
+  const KeyValuePairs = await import(`${contractsPath}/KeyValuePairs.json`);
   const LinearERC20Voting = await import(
     `${contractsPath}/LinearERC20Voting.json`
   );
@@ -61,7 +55,7 @@ export const getMasterCopies = async (): Promise<{
   multisendContract: Contract;
 }> => {
   if (!network.config.chainId) {
-    throw Error(`No chain ID found for: ${network.name}`)
+    throw Error(`No chain ID found for: ${network.name}`);
   }
 
   const {
@@ -78,12 +72,12 @@ export const getMasterCopies = async (): Promise<{
   )) as IModuleProxyFractory;
 
   const fractalAzoriusMasterCopyContract = (await ethers.getContractAt(
-    Azorius.abi,
+    Azorius.abi as Record<string, any>[],
     Azorius.address
   )) as IAzorius;
 
   const linearVotingMasterCopyContract = (await ethers.getContractAt(
-    LinearERC20Voting.abi,
+    LinearERC20Voting.abi as Record<string, any>[],
     LinearERC20Voting.address
   )) as ILinearERC20Voting;
 
@@ -136,7 +130,7 @@ export const getSafeData = async (
   createSafeTx: SafeTransaction;
 }> => {
   if (!network.config.chainId) {
-    throw Error(`No chain ID found for: ${network.name}`)
+    throw Error(`No chain ID found for: ${network.name}`);
   }
 
   const gnosisFactory = getProxyFactoryDeployment({
