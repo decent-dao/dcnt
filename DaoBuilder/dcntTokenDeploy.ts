@@ -2,7 +2,13 @@ import { DecentDAOConfig } from "./types";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { DCNTToken, LockRelease, NoMint__factory } from "../typechain";
+import {
+  DCNTToken,
+  DCNTToken__factory,
+  LockRelease,
+  LockRelease__factory,
+  NoMint__factory,
+} from "../typechain";
 
 export const deployDCNTAndLockRelease = async (
   deployer: SignerWithAddress,
@@ -15,23 +21,21 @@ export const deployDCNTAndLockRelease = async (
   //
   // Deploy DCNT token
   // Tokens will be minted to deployer address
-  const dcntTokenFactory = await ethers.getContractFactory("DCNTToken");
-  const dcntTokenContract = await dcntTokenFactory.deploy(
+  const noMintInstance = await new NoMint__factory(deployer).deploy();
+  await noMintInstance.deployed();
+  const dcntTokenContract = await new DCNTToken__factory(deployer).deploy(
     ethers.utils.parseEther(decentDAOConfig.initialSupply),
-    await deployer.getAddress(),
-    (
-      await new NoMint__factory(deployer).deploy()
-    ).address
+    deployer.address,
+    noMintInstance.address
   );
   await dcntTokenContract.deployed();
 
   //
   // Deploy lock release factory
   // Sets up voting power prior to DCNT tokens being transferred
-  const lockReleaseFactory = await ethers.getContractFactory("LockRelease");
   const start = decentDAOConfig.lockStart;
   const duration = decentDAOConfig.lockDuration;
-  const lockReleaseContract = await lockReleaseFactory.deploy(
+  const lockReleaseContract = await new LockRelease__factory(deployer).deploy(
     dcntTokenContract.address,
     decentDAOConfig.beneficiaries.map((a) => a.address),
     decentDAOConfig.beneficiaries.map((a) => a.lockedAmount),
