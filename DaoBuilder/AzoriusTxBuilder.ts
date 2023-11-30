@@ -69,22 +69,6 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
     this.setContracts();
   }
 
-  public buildRemoveOwners(owners: string[]): SafeTransaction[] {
-    if (!this.predictedSafeContract) throw new Error("Safe contract not set");
-    if (!this.multiSendContract) throw new Error("MultiSend contract not set");
-
-    const removeOwnerTxs = owners.map((owner) =>
-      buildContractCall(
-        this.predictedSafeContract,
-        "removeOwner",
-        [this.multiSendContract.address, owner, 1],
-        0,
-        false
-      )
-    );
-    return removeOwnerTxs;
-  }
-
   public buildLinearVotingContractSetupTx(): SafeTransaction {
     if (!this.linearVotingContract)
       throw new Error("lockReleaseContract contract not set");
