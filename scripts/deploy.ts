@@ -6,7 +6,6 @@ import { deployDCNTAndLockRelease } from "../DaoBuilder/dcntTokenDeploy";
 import { encodeMultiSend } from "../DaoBuilder/utils";
 import { decentDAOConfig } from "../config/dcntDAOConfig";
 import { utils } from "ethers";
-import { logDcntDaoTxt, logEthereumLogo } from "./graphics/graphics";
 
 async function createDAO() {
   //
@@ -82,7 +81,6 @@ async function createDAO() {
   allTxsMultisendTx.wait();
   console.timeEnd(`Multisend tx executed ${allTxsMultisendTx.hash}`);
 
-  logDcntDaoTxt();
   console.table({ daoAddress: predictedSafeContract.address });
 
   //
@@ -115,7 +113,6 @@ async function createDAO() {
     dao: predictedSafeContract.address,
     hash: transferTokenOwnership.hash,
   });
-  logEthereumLogo();
 }
 
 createDAO()
