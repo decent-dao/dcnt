@@ -6,6 +6,7 @@ import { deployDCNTAndLockRelease } from "../DaoBuilder/dcntTokenDeploy";
 import { encodeMultiSend } from "../DaoBuilder/utils";
 import { decentDAOConfig } from "../config/dcntDAOConfig";
 import { utils } from "ethers";
+import { SafeTransaction } from "../DaoBuilder/types";
 
 async function createDAO() {
   //
@@ -51,23 +52,18 @@ async function createDAO() {
   // With the internal TXs it should run post-deployment
   // As well as the strategy (lock release) deployment TX +
   // Token Voting module (Azorius)
-  const txs = [createSafeTx];
-  const internalTxs = [
-    azoriusTxBuilder.buildUpdateDAONameTx(),
-    azoriusTxBuilder.buildUpdateDAOSnapshotURLTx(),
-    azoriusTxBuilder.buildLinearVotingContractSetupTx(),
-    azoriusTxBuilder.buildEnableAzoriusModuleTx(),
-    azoriusTxBuilder.buildSwapOwnersTx(),
-  ];
-  console.log("Internal safe txs created");
-
+  const txs: SafeTransaction[] = [];
+  txs.push(createSafeTx);
   txs.push(azoriusTxBuilder.buildDeployStrategyTx());
   txs.push(azoriusTxBuilder.buildDeployAzoriusTx());
   txs.push(
-    azoriusTxBuilder.buildExecInternalSafeTx(
-      azoriusTxBuilder.signatures(),
-      internalTxs
-    )
+    azoriusTxBuilder.buildExecInternalSafeTx(azoriusTxBuilder.signatures(), [
+      azoriusTxBuilder.buildUpdateDAONameTx(),
+      azoriusTxBuilder.buildUpdateDAOSnapshotURLTx(),
+      azoriusTxBuilder.buildLinearVotingContractSetupTx(),
+      azoriusTxBuilder.buildEnableAzoriusModuleTx(),
+      azoriusTxBuilder.buildSwapOwnersTx(),
+    ])
   );
   const encodedTx = encodeMultiSend(txs);
 
