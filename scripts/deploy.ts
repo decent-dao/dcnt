@@ -73,11 +73,9 @@ async function createDAO() {
 
   //
   // Execute all transactions via multisend
-  const allTxsMultisendTx = await multisendContract.multiSend(encodedTx, {
-    gasLimit: 5000000,
-  });
-  allTxsMultisendTx.wait();
-  console.timeEnd(`Multisend tx executed ${allTxsMultisendTx.hash}`);
+  const allTxsMultisendTx = await multisendContract.multiSend(encodedTx);
+  await allTxsMultisendTx.wait();
+  console.log(`Multisend tx executed ${allTxsMultisendTx.hash}`);
 
   console.table({ daoAddress: predictedSafeContract.address });
 
