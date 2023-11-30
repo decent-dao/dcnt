@@ -17,7 +17,7 @@ import { getCreate2Address, solidityKeccak256 } from "ethers/lib/utils";
 import {
   getMultiSendCallOnlyDeployment,
   getProxyFactoryDeployment,
-  getSafeSingletonDeployment,
+  getSafeL2SingletonDeployment,
 } from "@safe-global/safe-deployments";
 const { AddressZero, HashZero } = ethers.constants;
 
@@ -152,7 +152,7 @@ export const getSafeData = async (
     gnosisFactory.defaultAddress
   )) as GnosisSafeProxyFactory;
 
-  const gnosisSingleton = getSafeSingletonDeployment({
+  const gnosisSingleton = getSafeL2SingletonDeployment({
     version: SAFE_VERSION,
     network: network.config.chainId.toString(),
   });
