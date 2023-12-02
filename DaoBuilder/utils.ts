@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Contract, ethers, BigNumber, utils } from "ethers";
 import crypto from "crypto";
-import { SafeTransaction, MetaTransaction } from "./types";
+import { SafeTransaction, MetaTransaction, Beneficiary } from "./types";
 
 // Prefix and postfix strings come from Zodiac contracts
 import { ModuleProxyFactory } from "@fractal-framework/fractal-contracts";
@@ -137,3 +137,23 @@ export const buildDeployZodiacModuleTx = (
     false
   );
 };
+
+export const getUniqueBeneficiaries = (
+  beneficiaries: Beneficiary[]
+): Beneficiary[] => {
+  return Object.values(
+    beneficiaries.reduce((acc, beneficiary) => {
+      if (acc[beneficiary.address]) {
+        // Sum the lockedAmount using BigNumber arithmetic
+        acc[beneficiary.address].lockedAmount = acc[
+          beneficiary.address
+        ].lockedAmount.add(beneficiary.lockedAmount);
+      } else {
+        // Clone the object to avoid mutating the original array
+        // eslint-disable-next-line node/no-unsupported-features/es-syntax
+        acc[beneficiary.address] = { ...beneficiary };
+      }
+      return acc;
+    }, {} as Record<string, Beneficiary>)
+  );
+}
