@@ -7,6 +7,7 @@ import {
   DCNTToken__factory,
   LockRelease,
   LockRelease__factory,
+  NoMint,
   NoMint__factory,
 } from "../typechain";
 
@@ -14,6 +15,7 @@ export const deployDCNTAndLockRelease = async (
   deployer: SignerWithAddress,
   decentDAOConfig: DecentDAOConfig
 ): Promise<{
+  noMintContract: NoMint;
   totalLockedAmount: BigNumber;
   dcntTokenContract: DCNTToken;
   lockReleaseContract: LockRelease;
@@ -21,12 +23,12 @@ export const deployDCNTAndLockRelease = async (
   //
   // Deploy DCNT token
   // Tokens will be minted to deployer address
-  const noMintInstance = await new NoMint__factory(deployer).deploy();
-  await noMintInstance.deployed();
+  const noMintContract = await new NoMint__factory(deployer).deploy();
+  await noMintContract.deployed();
   const dcntTokenContract = await new DCNTToken__factory(deployer).deploy(
     ethers.utils.parseEther(decentDAOConfig.initialSupply),
     deployer.address,
-    noMintInstance.address,
+    noMintContract.address,
     decentDAOConfig.tokenName,
     decentDAOConfig.tokenSymbol
   );
@@ -62,5 +64,6 @@ export const deployDCNTAndLockRelease = async (
     totalLockedAmount,
     dcntTokenContract,
     lockReleaseContract,
+    noMintContract,
   };
 };
