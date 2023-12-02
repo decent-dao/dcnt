@@ -16,7 +16,7 @@ export const deployDCNTAndLockRelease = async (
   decentDAOConfig: DecentDAOConfig
 ): Promise<{
   noMintContract: NoMint;
-  totalLockedAmount: BigNumber;
+  totalAmountToLock: BigNumber;
   dcntTokenContract: DCNTToken;
   lockReleaseContract: LockRelease;
 }> => {
@@ -50,18 +50,13 @@ export const deployDCNTAndLockRelease = async (
 
   //
   // Transfer beneficiary total tokens to lock contract
-  const totalLockedAmount = decentDAOConfig.beneficiaries.reduce(
+  const totalAmountToLock = decentDAOConfig.beneficiaries.reduce(
     (a, b) => a.add(b.lockedAmount),
     ethers.BigNumber.from(0)
   );
-  const tokenTransferTx = await dcntTokenContract.transfer(
-    lockReleaseContract.address,
-    totalLockedAmount
-  );
-  await tokenTransferTx.wait();
 
   return {
-    totalLockedAmount,
+    totalAmountToLock,
     dcntTokenContract,
     lockReleaseContract,
     noMintContract,

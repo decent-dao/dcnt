@@ -22,8 +22,17 @@ async function createDAO() {
   //
   // Deploy DCNT Token & Lock Release Contracts
   const [deployer] = await ethers.getSigners();
-  const { dcntTokenContract, lockReleaseContract, totalLockedAmount } =
+  const { dcntTokenContract, lockReleaseContract, totalAmountToLock } =
     await deployDCNTAndLockRelease(deployer, decentDAOConfig);
+
+  //
+  // Transfer all tokens to be locked up from
+  // to LockRelease contract
+  const lockUpTokens = await dcntTokenContract.transfer(
+    lockReleaseContract.address,
+    totalAmountToLock
+  );
+  await lockUpTokens.wait();
 
   const { predictedSafeContract, createSafeTx } = await getSafeData(
     multisendContract
@@ -76,7 +85,7 @@ async function createDAO() {
   // This is equal to total DCNT supply minus tokens held in lock contract
   const amountToTransfer = ethers.utils
     .parseEther(decentDAOConfig.initialSupply)
-    .sub(totalLockedAmount);
+    .sub(totalAmountToLock);
   const tokenTransfer = await dcntTokenContract.transfer(
     predictedSafeContract.address,
     amountToTransfer
