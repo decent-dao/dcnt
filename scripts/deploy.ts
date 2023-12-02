@@ -1,5 +1,5 @@
 import { AzoriusTxBuilder } from "../DaoBuilder/AzoriusTxBuilder";
-import { ethers } from "hardhat";
+import { ethers, run } from "hardhat";
 
 import { getMasterCopies, getSafeData } from "../DaoBuilder/daoUtils";
 import { deployDCNTAndLockRelease } from "../DaoBuilder/dcntTokenDeploy";
@@ -205,6 +205,16 @@ async function createDAO() {
     );
   await renounceMintFromDeployer.wait();
   console.log(`${urbanTechFoundation.address} renounced DEFAULT_ADMIN_ROLE`);
+
+  await run("verify:verify", { address: noMintContract.address });
+  await run("verify:verify", {
+    address: dcntTokenContract.address,
+    constructorArguments: dcntTokenConstructorArguments,
+  });
+  await run("verify:verify", {
+    address: lockReleaseContract.address,
+    constructorArguments: lockReleaseConstructorArguments,
+  });
 }
 
 createDAO()
