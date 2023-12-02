@@ -21,6 +21,17 @@ export interface SafeSignature {
   data: string;
 }
 
+export enum BeneficiaryType {
+  Purchaser,
+  Investor,
+}
+
+export interface Beneficiary {
+  type: BeneficiaryType;
+  address: string;
+  lockedAmount: BigNumber;
+}
+
 export interface DecentDAOConfig {
   tokenName: string;
   tokenSymbol: string;
@@ -36,6 +47,7 @@ export interface DecentDAOConfig {
   votingBasis: number;
   proposalRequiredWeight: number;
   beneficiaries: {
+    type: BeneficiaryType;
     address: string;
     lockedAmount: BigNumber;
   }[];
