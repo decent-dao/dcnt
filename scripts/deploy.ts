@@ -5,7 +5,6 @@ import { getMasterCopies, getSafeData } from "../DaoBuilder/daoUtils";
 import { deployDCNTAndLockRelease } from "../DaoBuilder/dcntTokenDeploy";
 import { encodeMultiSend } from "../DaoBuilder/utils";
 import { decentDAOConfig } from "../config/dcntDAOConfig";
-import { utils } from "ethers";
 import { SafeTransaction } from "../DaoBuilder/types";
 
 async function createDAO() {
@@ -75,7 +74,7 @@ async function createDAO() {
   //
   // Transfer remaining unlocked DCNT supply to the DAO
   // This is equal to total DCNT supply minus tokens held in lock contract
-  const amountToTransfer = utils
+  const amountToTransfer = ethers.utils
     .parseEther(decentDAOConfig.initialSupply)
     .sub(totalLockedAmount);
   const tokenTransfer = await dcntTokenContract.transfer(
