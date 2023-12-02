@@ -58,13 +58,6 @@ export const deployDCNTAndLockRelease = async (
   );
   await tokenTransferTx.wait();
 
-  console.log("Decent Token and Lock Release contracts deployed:");
-  console.table({
-    dcntTokenContract: dcntTokenContract.address,
-    lockReleaseContract: lockReleaseContract.address,
-    totalLockedAmount: totalLockedAmount.toString(),
-  });
-
   return {
     totalLockedAmount,
     dcntTokenContract,

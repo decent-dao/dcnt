@@ -149,14 +149,6 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
   }
 
   private setPredictedStrategyAddress() {
-    console.log("Setting predicted strategy address");
-    console.table({
-      salt: this.strategyNonce,
-      masterCopy: this.linearVotingMasterCopyContract.address,
-      safeAddress: this.predictedSafeContract.address,
-      proxyFactory: this.zodiacModuleProxyFactoryContract.address,
-      lockRelease: this.lockReleaseContract.address,
-    });
     const encodedStrategyInitParams = defaultAbiCoder.encode(
       [
         "address",
@@ -245,12 +237,6 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
       throw new Error("Azorius address not set");
     if (!this.predictedStrategyAddress)
       throw new Error("Strategy address not set");
-
-    console.log("Contracts set");
-    console.table({
-      azorius: this.predictedAzoriusAddress,
-      strategy: this.predictedStrategyAddress,
-    });
 
     this.azoriusContract = this.fractalAzoriusMasterCopyContract.attach(
       this.predictedAzoriusAddress

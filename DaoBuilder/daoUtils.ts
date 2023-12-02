@@ -104,16 +104,6 @@ export const getMasterCopies = async (): Promise<{
     multisendSingletonDeployment.defaultAddress
   );
 
-  console.log("Master copies fetched");
-  console.table({
-    zodiacModuleProxyFactoryContract: zodiacModuleProxyFactoryContract.address,
-    fractalAzoriusMasterCopyContract: fractalAzoriusMasterCopyContract.address,
-    fractalRegistryContract: fractalRegistryContract.address,
-    keyValuePairContract: keyValuePairContract.address,
-    linearVotingMasterCopyContract: linearVotingMasterCopyContract.address,
-    multisendContract: multisendContract.address,
-  });
-
   return {
     multisendContract,
     zodiacModuleProxyFactoryContract,

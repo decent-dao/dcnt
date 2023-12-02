@@ -71,9 +71,6 @@ async function createDAO() {
   // Execute all transactions via multisend
   const allTxsMultisendTx = await multisendContract.multiSend(encodedTx);
   await allTxsMultisendTx.wait();
-  console.log(`Multisend tx executed ${allTxsMultisendTx.hash}`);
-
-  console.table({ daoAddress: predictedSafeContract.address });
 
   //
   // Transfer remaining unlocked DCNT supply to the DAO
@@ -87,12 +84,6 @@ async function createDAO() {
   );
   await tokenTransfer.wait();
 
-  console.log("DCNT Tokens transferred to Decent DAO:");
-  console.table({
-    amountToTransfer: ethers.utils.formatEther(amountToTransfer),
-    hash: tokenTransfer.hash,
-  });
-
   //
   // Assign MINT ability of the DCNT Token to the Decent DAO
   const transferTokenMintOwnership = await dcntTokenContract.grantRole(
@@ -100,7 +91,6 @@ async function createDAO() {
     predictedSafeContract.address
   );
   await transferTokenMintOwnership.wait();
-  console.log("DCNT Token MINT ownership added to Decent DAO.");
 
   // Assign UPDATE_MINT_AUTHORIZATION_ROLE ability of the DCNT Token to the Decent DAO
   const transferTokenUpdateMintOwnership = await dcntTokenContract.grantRole(
@@ -110,7 +100,6 @@ async function createDAO() {
     predictedSafeContract.address
   );
   await transferTokenUpdateMintOwnership.wait();
-  console.log("DCNT Token UPDATE MINT ownership added to Decent DAO.");
 
   // Revoke DEFAULT_ADMIN_ROLE of the DCNT Token from the deployer
   const renounceMintFromDeployer = await dcntTokenContract.renounceRole(
@@ -118,7 +107,6 @@ async function createDAO() {
     deployer.address
   );
   await renounceMintFromDeployer.wait();
-  console.log("DCNT Token DEFAULT_ADMIN_ROLE renounced from deployer.");
 }
 
 createDAO()
