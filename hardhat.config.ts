@@ -28,16 +28,34 @@ const config: HardhatUserConfig = {
     mainnet: {
       chainId: 1,
       url: process.env.MAINNET_PROVIDER || "",
-      accounts: process.env.MAINNET_DEPLOYER_PRIVATE_KEY
-        ? [process.env.MAINNET_DEPLOYER_PRIVATE_KEY]
-        : [],
+      accounts:
+        process.env.MAINNET_DEPLOYER_UTF_PRIVATE_KEY &&
+        process.env.MAINNET_DEPLOYER_TDF_PRIVATE_KEY &&
+        process.env.MAINNET_DEPLOYER_TAL_PRIVATE_KEY &&
+        process.env.MAINNET_DEPLOYER_DTL_PRIVATE_KEY
+          ? [
+              process.env.MAINNET_DEPLOYER_UTF_PRIVATE_KEY,
+              process.env.MAINNET_DEPLOYER_TDF_PRIVATE_KEY,
+              process.env.MAINNET_DEPLOYER_TAL_PRIVATE_KEY,
+              process.env.MAINNET_DEPLOYER_DTL_PRIVATE_KEY,
+            ]
+          : [],
     },
     goerli: {
       chainId: 5,
       url: process.env.GOERLI_PROVIDER || "",
-      accounts: process.env.GOERLI_DEPLOYER_PRIVATE_KEY
-        ? [process.env.GOERLI_DEPLOYER_PRIVATE_KEY]
-        : [],
+      accounts:
+        process.env.GOERLI_DEPLOYER_UTF_PRIVATE_KEY &&
+        process.env.GOERLI_DEPLOYER_TDF_PRIVATE_KEY &&
+        process.env.GOERLI_DEPLOYER_TAL_PRIVATE_KEY &&
+        process.env.GOERLI_DEPLOYER_DTL_PRIVATE_KEY
+          ? [
+              process.env.GOERLI_DEPLOYER_UTF_PRIVATE_KEY,
+              process.env.GOERLI_DEPLOYER_TDF_PRIVATE_KEY,
+              process.env.GOERLI_DEPLOYER_TAL_PRIVATE_KEY,
+              process.env.GOERLI_DEPLOYER_DTL_PRIVATE_KEY,
+            ]
+          : [],
     },
   },
   gasReporter: {
