@@ -1,12 +1,21 @@
 import { DecentDAOConfig } from "../DaoBuilder/types";
 import { beneficiaries } from "./beneficiaries";
 
-// @note 1 block = 12 seconds
-// @note 1 day = 7200 blocks
-// @note 1 week = 50400 blocks
-
-const ONE_YEAR = 365 * 24 * 60 * 60;
 const NOW = Math.floor(Date.now() / 1000);
+
+const ONE_SECOND = 1;
+const SECONDS_PER_BLOCK = 12;
+const SECONDS_PER_MINUTE = 60;
+const MINUTES_PER_HOUR = 60;
+const HOURS_PER_DAY = 24;
+
+const ONE_MINUTE_OF_SECONDS = ONE_SECOND * SECONDS_PER_MINUTE;
+const ONE_HOUR_OF_SECONDS = ONE_MINUTE_OF_SECONDS * MINUTES_PER_HOUR;
+const ONE_DAY_OF_SECONDS = ONE_HOUR_OF_SECONDS * HOURS_PER_DAY;
+
+const ONE_MINUTE_OF_BLOCKS = ONE_MINUTE_OF_SECONDS / SECONDS_PER_BLOCK;
+const ONE_HOUR_OF_BLOCKS = ONE_MINUTE_OF_BLOCKS * MINUTES_PER_HOUR;
+const ONE_DAY_OF_BLOCKS = ONE_HOUR_OF_BLOCKS * HOURS_PER_DAY;
 
 export const decentDAOConfig: DecentDAOConfig = {
   // name of the Token
@@ -16,25 +25,25 @@ export const decentDAOConfig: DecentDAOConfig = {
   // name of the DAO
   name: "Decent DAO",
   // Lock Release | start timestamp of the release schedule
-  unlockStart: NOW, // (seconds)
+  unlockStartTimestamp: NOW + ONE_HOUR_OF_SECONDS * 12, // (seconds)
   // Lock Release | duration of the release schedule in seconds
-  unlockDuration: ONE_YEAR, // (seconds)
+  unlockDurationSeconds: ONE_DAY_OF_SECONDS, // (seconds)
   // Snapshot | url of the snapshot page
   snapshotENS: "decent-dao.eth",
   // DCNT Token | initial supply of the token
   initialSupply: "100", // (+18 decimals)
   // Linear Strategy |  Length of time that voting occurs
-  votingPeriod: 5, // (blocks)
-  // Linear Strategy | Length of time between when a proposal is passed and when it can be actually be executed.  For the top level Decent DAO we may want to have this be 0
-  timeLockPeriod: 0, // (blocks)
-  // Linear Strategy | Length of time that a successful proposal has to be executed, after which is will expire.  We can simply set this to the the same length decided on for Voting Period.
-  executionPeriod: 86400, // (blocks)
-  // Linear Strategy | Percentage of total possible tokens that must vote in order to consider a proposal result valid.  We should take into account that a large portion of tokens will be locked for investors, who may never vote.
-  quorum: 4, // (basis points)
-  // Linear Strategy | Percentage of total possible tokens that must vote YES in order to pass a proposal.  Suggested 50% for a simple majority.
-  votingBasis: 500000, // (basis points)
-  // Linear Strategy | Percentage of total possible tokens that must be delegated to a user in order for them to create a proposal.  Suggested 1%.
-  proposalRequiredWeight: 0, // (basis points)
+  votingPeriodBlocks: ONE_DAY_OF_BLOCKS, // (blocks)
+  // Linear Strategy | Length of time between when a proposal is passed and when it can be actually be executed.
+  timeLockPeriodBlocks: ONE_MINUTE_OF_BLOCKS * 10, // (blocks)
+  // Linear Strategy | Length of time that a successful proposal has to be executed, after which is will expire.
+  executionPeriodBlocks: ONE_DAY_OF_BLOCKS * 12, // (blocks)
+  // Linear Strategy | Percentage of total possible tokens that must vote in order to consider a proposal result valid.
+  quorumBasisNumerator: 40000, // (basis points, will be divided by 1_000_000)
+  // Linear Strategy | Percentage of total possible tokens which have voted that must vote YES in order to pass a proposal.
+  votingBasisNumerator: 500000, // (basis points, will be divided by 1_000_000)
+  // Linear Strategy | Number of total possible tokens that must be delegated to a user in order for them to create a proposal.
+  proposalRequiredWeightTokens: 0, // (delegated voting token balance)
   // Lock Release | Beneficiaries of the lock release schedule
   /**
    * Beneficiaries {@link beneficiaries}

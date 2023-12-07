@@ -36,16 +36,16 @@ export interface DecentDAOConfig {
   tokenName: string;
   tokenSymbol: string;
   name: string;
-  unlockStart: number;
-  unlockDuration: number;
+  unlockStartTimestamp: number;
+  unlockDurationSeconds: number;
   snapshotENS: string;
   initialSupply: string;
-  votingPeriod: number;
-  quorum: number;
-  timeLockPeriod: number;
-  executionPeriod: number;
-  votingBasis: number;
-  proposalRequiredWeight: number;
+  votingPeriodBlocks: number;
+  quorumBasisNumerator: number;
+  timeLockPeriodBlocks: number;
+  executionPeriodBlocks: number;
+  votingBasisNumerator: number;
+  proposalRequiredWeightTokens: number;
   beneficiaries: {
     type: BeneficiaryType;
     address: string;

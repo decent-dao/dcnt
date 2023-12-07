@@ -84,8 +84,8 @@ export const deployDCNTAndLockRelease = async (
     dcntTokenContract.address,
     uniqueBeneficiaries.map((a) => a.address),
     uniqueBeneficiaries.map((a) => a.lockedAmount),
-    decentDAOConfig.unlockStart,
-    decentDAOConfig.unlockDuration,
+    decentDAOConfig.unlockStartTimestamp,
+    decentDAOConfig.unlockDurationSeconds,
   ];
   const lockReleaseContract = await new LockRelease__factory(deployer).deploy(
     ...lockReleaseConstructorArguments

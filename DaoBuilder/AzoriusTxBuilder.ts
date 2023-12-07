@@ -163,10 +163,10 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
         this.predictedSafeContract.address, // owner
         this.lockReleaseContract.address, // governance
         "0x0000000000000000000000000000000000000001", // Azorius module
-        this.decentDAOConfig.votingPeriod, // voting period (blocks)
-        this.decentDAOConfig.proposalRequiredWeight, // proposer weight, how much is needed to create a proposal.
-        this.decentDAOConfig.quorum, // quorom numerator, denominator is 1,000,000, so quorum percentage is 50%
-        this.decentDAOConfig.votingBasis, // basis numerator, denominator is 1,000,000, so basis percentage is 50% (simple majority)
+        this.decentDAOConfig.votingPeriodBlocks, // voting period (blocks)
+        this.decentDAOConfig.proposalRequiredWeightTokens, // proposer weight, how much is needed to create a proposal.
+        this.decentDAOConfig.quorumBasisNumerator, // quorom numerator, denominator is 1,000,000
+        this.decentDAOConfig.votingBasisNumerator, // basis numerator, denominator is 1,000,000
       ]
     );
 
@@ -205,8 +205,8 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
         this.predictedSafeContract.address,
         this.predictedSafeContract.address,
         [this.predictedStrategyAddress],
-        this.decentDAOConfig.timeLockPeriod, // timelock period in blocks
-        this.decentDAOConfig.executionPeriod, // execution period in blocks
+        this.decentDAOConfig.timeLockPeriodBlocks, // timelock period in blocks
+        this.decentDAOConfig.executionPeriodBlocks, // execution period in blocks
       ]
     );
 
