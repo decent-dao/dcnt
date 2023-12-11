@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IDCNTMintAuthorization, IERC20 } from "./IDCNTMintAuthorization.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "./IDCNTMintAuthorization.sol";
+import "hardhat/console.sol";
 
 /// @notice an implementation of IDCNTMintAuthorization that limits mint requests to a capped annual inflation
 contract AnnualCappedInflation is Ownable, IDCNTMintAuthorization {
@@ -14,7 +15,11 @@ contract AnnualCappedInflation is Ownable, IDCNTMintAuthorization {
     error MintExceedsMaximum();
     error MintTooSoon();
 
-    constructor(IERC20 _token, uint128 _nextMint, address _owner) {
+    constructor(
+        IERC20 _token,
+        uint128 _nextMint,
+        address _owner
+    ) Ownable(msg.sender) {
         token = _token;
         nextMint = _nextMint;
         _transferOwnership(_owner);
@@ -37,7 +42,10 @@ contract AnnualCappedInflation is Ownable, IDCNTMintAuthorization {
     /// @notice mint can be called at most once every 365 days, and with an amount no more than 2% of the current supply
     /// @param destination address where new tokens will be minted to
     /// @param amount amount of tokens to mint
-    function authorizeMint(address destination, uint256 amount) external onlyOwner returns (bool) {
+    function authorizeMint(
+        address destination,
+        uint256 amount
+    ) external onlyOwner returns (bool) {
         if (!canMint(destination, amount)) {
             return false;
         }

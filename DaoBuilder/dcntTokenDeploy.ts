@@ -1,6 +1,4 @@
 import { BeneficiaryType, DecentDAOConfig } from "./types";
-import { BigNumber } from "ethers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import {
   DCNTToken,
@@ -9,24 +7,25 @@ import {
   LockRelease__factory,
   NoMint,
   NoMint__factory,
-} from "../typechain";
+} from "../typechain-types";
 import { getUniqueBeneficiaries } from "./utils";
+import { Signer } from "ethers";
 
 export const deployDCNTAndLockRelease = async (
-  deployer: SignerWithAddress,
+  deployer: Signer,
   decentDAOConfig: DecentDAOConfig
 ): Promise<{
   noMintContract: NoMint;
-  totalAmountToLock: BigNumber;
-  amountToLockForInvestors: BigNumber;
-  amountToLockForPurchasers: BigNumber;
+  totalAmountToLock: bigint;
+  amountToLockForInvestors: bigint;
+  amountToLockForPurchasers: bigint;
   dcntTokenContract: DCNTToken;
-  dcntTokenConstructorArguments: [BigNumber, string, string, string, string];
+  dcntTokenConstructorArguments: [bigint, string, string, string, string];
   lockReleaseContract: LockRelease;
   lockReleaseConstructorArguments: [
     string,
     string[],
-    BigNumber[],
+    bigint[],
     number,
     number
   ];
@@ -34,34 +33,30 @@ export const deployDCNTAndLockRelease = async (
   //
   // Deploy an instance of the NoMint contract, will be used in DCNT
   const noMintContract = await new NoMint__factory(deployer).deploy();
-  await noMintContract.deployed();
-  console.log(
-    `${deployer.address} deployed NoMint to ${noMintContract.address} at ${noMintContract.deployTransaction.hash}`
-  );
+  await noMintContract.waitForDeployment();
+  console.log(`${await deployer.getAddress()} deployed NoMint to ${await noMintContract.getAddress()} at ${noMintContract.deploymentTransaction()?.hash}`);
 
   //
   // Deploy DCNT token
   // Tokens will be minted to deployer address
   const dcntTokenConstructorArguments: [
-    BigNumber,
+    bigint,
     string,
     string,
     string,
     string
   ] = [
-    ethers.utils.parseEther(decentDAOConfig.initialSupply),
-    deployer.address,
-    noMintContract.address,
+    ethers.parseEther(decentDAOConfig.initialSupply),
+    await deployer.getAddress(),
+    await noMintContract.getAddress(),
     decentDAOConfig.tokenName,
     decentDAOConfig.tokenSymbol,
   ];
   const dcntTokenContract = await new DCNTToken__factory(deployer).deploy(
     ...dcntTokenConstructorArguments
   );
-  await dcntTokenContract.deployed();
-  console.log(
-    `${deployer.address} deployed DCNT to ${dcntTokenContract.address} at ${dcntTokenContract.deployTransaction.hash}`
-  );
+  await dcntTokenContract.waitForDeployment();
+  console.log(`${await deployer.getAddress()} deployed DCNT to ${await dcntTokenContract.getAddress()} at ${dcntTokenContract.deploymentTransaction()?.hash}`);
 
   //
   // Make sure any duplicates in the beneficiares list
@@ -77,11 +72,11 @@ export const deployDCNTAndLockRelease = async (
   const lockReleaseConstructorArguments: [
     string,
     string[],
-    BigNumber[],
+    bigint[],
     number,
     number
   ] = [
-    dcntTokenContract.address,
+    await dcntTokenContract.getAddress(),
     uniqueBeneficiaries.map((a) => a.address),
     uniqueBeneficiaries.map((a) => a.lockedAmount),
     decentDAOConfig.unlockStartTimestamp,
@@ -90,34 +85,32 @@ export const deployDCNTAndLockRelease = async (
   const lockReleaseContract = await new LockRelease__factory(deployer).deploy(
     ...lockReleaseConstructorArguments
   );
-  await lockReleaseContract.deployed();
-  console.log(
-    `${deployer.address} deployed LockRelease to ${lockReleaseContract.address} at ${lockReleaseContract.deployTransaction.hash}`
-  );
+  await lockReleaseContract.waitForDeployment();
+  console.log(`${await deployer.getAddress()} deployed LockRelease to ${await lockReleaseContract.getAddress()} at ${lockReleaseContract.deploymentTransaction()?.hash}`);
 
   //
   // Compute beneficiary total tokens for lock contract
   const totalAmountToLock = uniqueBeneficiaries.reduce(
-    (acc, cur) => acc.add(cur.lockedAmount),
-    ethers.BigNumber.from(0)
+    (acc, cur) => acc + cur.lockedAmount,
+    BigInt(0)
   );
 
   // Compute total number of tokens for Investors
   const amountToLockForInvestors = decentDAOConfig.beneficiaries.reduce(
     (acc, cur) => {
       if (cur.type !== BeneficiaryType.Investor) return acc;
-      return acc.add(cur.lockedAmount);
+      return acc + cur.lockedAmount;
     },
-    ethers.BigNumber.from(0)
+    BigInt(0)
   );
 
   // Compute total number of tokens for Purchasers
   const amountToLockForPurchasers = decentDAOConfig.beneficiaries.reduce(
     (acc, cur) => {
       if (cur.type !== BeneficiaryType.Purchaser) return acc;
-      return acc.add(cur.lockedAmount);
+      return acc + cur.lockedAmount;
     },
-    ethers.BigNumber.from(0)
+    BigInt(0)
   );
 
   return {

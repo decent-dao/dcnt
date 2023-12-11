@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { SafeTransaction } from "./types";
 import { buildContractCall, getRandomBytes } from "./utils";
-import { Contract } from "ethers";
+import { Contract, Signer } from "ethers";
 import { ethers, network } from "hardhat";
 import {
   GnosisSafeProxyFactory__factory as GnosisSafeFactory,
@@ -13,16 +13,17 @@ import {
   GnosisSafe,
   GnosisSafeProxyFactory,
 } from "@fractal-framework/fractal-contracts";
-import { getCreate2Address, solidityKeccak256 } from "ethers/lib/utils";
 import {
   getMultiSendCallOnlyDeployment,
   getProxyFactoryDeployment,
   getSafeL2SingletonDeployment,
   getCompatibilityFallbackHandlerDeployment,
 } from "@safe-global/safe-deployments";
-const { AddressZero, HashZero } = ethers.constants;
 
 export const SAFE_VERSION = "1.3.0";
+import MultiSend from "@safe-global/safe-deployments/dist/assets/v1.3.0/multi_send_call_only.json";
+const MultiSendABI = MultiSend.abi;
+const { ZeroAddress, ZeroHash } = ethers;
 
 /* eslint-disable node/no-unsupported-features/es-syntax */
 async function getFractalContractAddressesByNetworkName() {
@@ -47,7 +48,9 @@ async function getFractalContractAddressesByNetworkName() {
 }
 /* eslint-enable node/no-unsupported-features/es-syntax */
 
-export const getMasterCopies = async (): Promise<{
+export const getMasterCopies = async (
+  theDecentFoundation: Signer,
+): Promise<{
   zodiacModuleProxyFactoryContract: IModuleProxyFractory;
   fractalAzoriusMasterCopyContract: IAzorius;
   fractalRegistryContract: IFractalRegistry;
@@ -70,27 +73,27 @@ export const getMasterCopies = async (): Promise<{
   const zodiacModuleProxyFactoryContract = (await ethers.getContractAt(
     ModuleProxyFactory.abi as Record<string, any>[],
     ModuleProxyFactory.address
-  )) as IModuleProxyFractory;
+  )) as unknown as IModuleProxyFractory;
 
   const fractalAzoriusMasterCopyContract = (await ethers.getContractAt(
     Azorius.abi as Record<string, any>[],
     Azorius.address
-  )) as IAzorius;
+  )) as unknown as IAzorius;
 
   const linearVotingMasterCopyContract = (await ethers.getContractAt(
     LinearERC20Voting.abi as Record<string, any>[],
     LinearERC20Voting.address
-  )) as ILinearERC20Voting;
+  )) as unknown as ILinearERC20Voting;
 
   const fractalRegistryContract = (await ethers.getContractAt(
     FractalRegistry.abi as Record<string, any>[],
     FractalRegistry.address
-  )) as IFractalRegistry;
+  )) as unknown as IFractalRegistry;
 
   const keyValuePairContract = (await ethers.getContractAt(
     KeyValuePairs.abi as Record<string, any>[],
     KeyValuePairs.address
-  )) as IKeyValuePairs;
+  )) as unknown as IKeyValuePairs;
 
   const multisendSingletonDeployment = getMultiSendCallOnlyDeployment({
     version: SAFE_VERSION,
@@ -135,7 +138,7 @@ export const getSafeData = async (
   const gnosisSafeFactoryContract = (await ethers.getContractAt(
     GnosisSafeFactory.abi,
     gnosisFactory.defaultAddress
-  )) as GnosisSafeProxyFactory;
+  )) as unknown as GnosisSafeProxyFactory;
 
   const gnosisSingleton = getSafeL2SingletonDeployment({
     version: SAFE_VERSION,
@@ -147,7 +150,7 @@ export const getSafeData = async (
   const gnosisSafeSingletonContract = (await ethers.getContractAt(
     gnosisSingleton.abi,
     gnosisSingleton.defaultAddress
-  )) as GnosisSafe;
+  )) as unknown as GnosisSafe;
 
   const compatibilityFallbackHandlerSingleton =
     getCompatibilityFallbackHandlerDeployment({
@@ -159,39 +162,39 @@ export const getSafeData = async (
     throw new Error("Compatibility Fallback Handler singleton not found");
 
   // multisend contract is the only signer; this is removed later
-  const signers = [multiSendContract.address];
+  const signers = [await multiSendContract.getAddress()];
 
   const createGnosisCalldata =
     gnosisSafeSingletonContract.interface.encodeFunctionData("setup", [
       signers, // owners
       1, // threshold
-      AddressZero, // to
-      HashZero, // data
+      ZeroAddress, // to
+      ZeroHash, // data
       compatibilityFallbackHandlerSingleton.defaultAddress, // fallback handler
-      AddressZero, // payment token
+      ZeroAddress, // payment token
       0, // payment
-      AddressZero, // payment receiver
+      ZeroAddress, // payment receiver
     ]);
 
-  const predictedGnosisSafeAddress = getCreate2Address(
-    gnosisSafeFactoryContract.address,
-    solidityKeccak256(
+  const predictedGnosisSafeAddress = ethers.getCreate2Address(
+    await gnosisSafeFactoryContract.getAddress(),
+    ethers.solidityPackedKeccak256(
       ["bytes", "uint256"],
-      [solidityKeccak256(["bytes"], [createGnosisCalldata]), saltNum]
+      [ethers.solidityPackedKeccak256(["bytes"], [createGnosisCalldata]), saltNum]
     ),
-    solidityKeccak256(
+    ethers.solidityPackedKeccak256(
       ["bytes", "uint256"],
       [
         await gnosisSafeFactoryContract.proxyCreationCode(),
-        gnosisSafeSingletonContract.address,
+        await gnosisSafeSingletonContract.getAddress(),
       ]
     )
   );
 
-  const createSafeTx = buildContractCall(
+  const createSafeTx = await buildContractCall(
     gnosisSafeFactoryContract,
     "createProxyWithNonce",
-    [gnosisSafeSingletonContract.address, createGnosisCalldata, saltNum],
+    [await gnosisSafeSingletonContract.getAddress(), createGnosisCalldata, saltNum],
     0,
     false
   );

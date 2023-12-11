@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @notice interface that all potential mint authorization contracts must conform to
 interface IDCNTMintAuthorization {
@@ -9,5 +9,8 @@ interface IDCNTMintAuthorization {
     /// @param destination address of the recipient of the new tokens
     /// @param amount amount of tokens being requested
     /// @return bool indicating whether or not the request is authorized or not
-    function authorizeMint(address destination, uint256 amount) external returns (bool);
+    function authorizeMint(
+        address destination,
+        uint256 amount
+    ) external returns (bool);
 }

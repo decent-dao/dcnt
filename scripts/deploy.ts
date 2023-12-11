@@ -6,6 +6,8 @@ import { deployDCNTAndLockRelease } from "../DaoBuilder/dcntTokenDeploy";
 import { encodeMultiSend } from "../DaoBuilder/utils";
 import { decentDAOConfig } from "../config/dcntDAOConfig";
 import { SafeTransaction } from "../DaoBuilder/types";
+import { DCNTToken__factory, LockRelease__factory } from "../typechain-types";
+import { Contract } from "ethers";
 
 async function createDAO() {
   //
@@ -31,7 +33,7 @@ async function createDAO() {
     keyValuePairContract,
     linearVotingMasterCopyContract,
     multisendContract,
-  } = await getMasterCopies();
+  } = await getMasterCopies(theDecentFoundation);
 
   //
   // Deploy DCNT Token & Lock Release Contracts
@@ -49,63 +51,35 @@ async function createDAO() {
   //
   // Transfer all tokens to be locked up from
   // Urban Tech Foundation to Twine Assets Limited
-  const urbanTechToTwine = await dcntTokenContract
-    .connect(urbanTechFoundation)
-    .transfer(twineAssetsLimited.address, totalAmountToLock);
+  const urbanTechToTwine = await dcntTokenContract.connect(urbanTechFoundation).transfer(twineAssetsLimited.address, totalAmountToLock);
   await urbanTechToTwine.wait();
-  console.log(
-    `${urbanTechFoundation.address} transferred ${ethers.utils.formatEther(
-      totalAmountToLock
-    )} tokens to ${
-      twineAssetsLimited.address
-    } (UTF sending Investor and Purchaser tokens to TAL)`
-  );
+  console.log(`${urbanTechFoundation.address} transferred ${ethers.formatEther(totalAmountToLock)} tokens to ${twineAssetsLimited.address} (UTF sending Investor and Purchaser tokens to TAL)`);
 
   //
   // Transfer tokens to be locked up for Investors
   // from Twine Assets Limited to Decent Technologies LLC
-  const twineAssetsToDecentTech = await dcntTokenContract
-    .connect(twineAssetsLimited)
-    .transfer(decentTechLLC.address, amountToLockForInvestors);
+  const twineAssetsToDecentTech = await dcntTokenContract.connect(twineAssetsLimited).transfer(decentTechLLC.address, amountToLockForInvestors);
   await twineAssetsToDecentTech.wait();
-  console.log(
-    `${twineAssetsLimited.address} transferred ${ethers.utils.formatEther(
-      amountToLockForInvestors
-    )} tokens to ${decentTechLLC.address} (TAL sending Investor tokens to DTL)`
-  );
+  console.log(`${twineAssetsLimited.address} transferred ${ethers.formatEther(amountToLockForInvestors)} tokens to ${decentTechLLC.address} (TAL sending Investor tokens to DTL)`);
 
   // Lock up tokens for Investors
   // from Decent Technologies to the LockRelease contract
-  const decentTechToLockRelease = await dcntTokenContract
-    .connect(decentTechLLC)
-    .transfer(lockReleaseContract.address, amountToLockForInvestors);
+  const decentTechToLockRelease = await dcntTokenContract.connect(decentTechLLC).transfer(await lockReleaseContract.getAddress(), amountToLockForInvestors);
   await decentTechToLockRelease.wait();
-  console.log(
-    `${decentTechLLC.address} transferred ${ethers.utils.formatEther(
-      amountToLockForInvestors
-    )} tokens to ${
-      lockReleaseContract.address
-    } (DTL locking up Investor tokens)`
-  );
+  console.log(`${decentTechLLC.address} transferred ${ethers.formatEther(amountToLockForInvestors)} tokens to ${await lockReleaseContract.getAddress()} (DTL locking up Investor tokens)`);
 
   //
   // Lock up tokens for Purchasers
   // from Twine Assets Limited to the LockRelease contract
-  const twineAssetsToLockRelease = await dcntTokenContract
-    .connect(twineAssetsLimited)
-    .transfer(lockReleaseContract.address, amountToLockForPurchasers);
+  const twineAssetsToLockRelease = await dcntTokenContract.connect(twineAssetsLimited).transfer(await lockReleaseContract.getAddress(), amountToLockForPurchasers);
   await twineAssetsToLockRelease.wait();
-  console.log(
-    `${twineAssetsLimited.address} transferred ${ethers.utils.formatEther(
-      amountToLockForPurchasers
-    )} tokens to ${
-      lockReleaseContract.address
-    } (TAL locking up Purchaser tokens)`
-  );
+  console.log(`${twineAssetsLimited.address} transferred ${ethers.formatEther(amountToLockForPurchasers)} tokens to ${await lockReleaseContract.getAddress()} (TAL locking up Purchaser tokens)`);
 
-  const { predictedSafeContract, createSafeTx } = await getSafeData(
-    multisendContract
-  );
+  const { predictedSafeContract, createSafeTx } = await getSafeData(multisendContract);
+
+  // // temp shit
+  // const dcntTokenContract = DCNTToken__factory.connect("0x603B18914F60C8041F84CD5d6952d92491E9F33E");
+  // const lockReleaseContract = LockRelease__factory.connect("0xC5b015a7ACC390062fA48A7a3BbB260e0b1342d8");
 
   //
   // Build Token Voting Contract
@@ -123,6 +97,7 @@ async function createDAO() {
     keyValuePairContract,
     linearVotingMasterCopyContract
   );
+  await azoriusTxBuilder.setup();
 
   //
   // Setup Gnosis Safe creation TX
@@ -131,88 +106,73 @@ async function createDAO() {
   // Token Voting module (Azorius)
   const txs: SafeTransaction[] = [];
   txs.push(createSafeTx);
-  txs.push(azoriusTxBuilder.buildDeployStrategyTx());
-  txs.push(azoriusTxBuilder.buildDeployAzoriusTx());
+  txs.push(await azoriusTxBuilder.buildDeployStrategyTx());
+  txs.push(await azoriusTxBuilder.buildDeployAzoriusTx());
   txs.push(
-    azoriusTxBuilder.buildExecInternalSafeTx(azoriusTxBuilder.signatures(), [
-      azoriusTxBuilder.buildUpdateDAONameTx(),
-      azoriusTxBuilder.buildUpdateDAOSnapshotURLTx(),
-      azoriusTxBuilder.buildLinearVotingContractSetupTx(),
-      azoriusTxBuilder.buildEnableAzoriusModuleTx(),
-      azoriusTxBuilder.buildSwapOwnersTx(),
+    await azoriusTxBuilder.buildExecInternalSafeTx(await azoriusTxBuilder.signatures(), [
+      await azoriusTxBuilder.buildUpdateDAONameTx(),
+      await azoriusTxBuilder.buildUpdateDAOSnapshotURLTx(),
+      await azoriusTxBuilder.buildLinearVotingContractSetupTx(),
+      await azoriusTxBuilder.buildEnableAzoriusModuleTx(),
+      await azoriusTxBuilder.buildSwapOwnersTx(),
     ])
   );
   const encodedTx = encodeMultiSend(txs);
 
   //
   // Execute all transactions via multisend
-  const allTxsMultisendTx = await multisendContract
-    .connect(theDecentFoundation)
-    .multiSend(encodedTx);
+  const allTxsMultisendTx = await (multisendContract.connect(theDecentFoundation) as Contract).multiSend(encodedTx);
   await allTxsMultisendTx.wait();
-  console.log(
-    `${theDecentFoundation.address} deployed Fractal Safe to ${predictedSafeContract.address} at ${allTxsMultisendTx.hash}`
-  );
+  console.log(`${theDecentFoundation.address} deployed Fractal Safe to ${await predictedSafeContract.getAddress()} at ${allTxsMultisendTx.hash}`);
+
   //
   // Transfer remaining unlocked DCNT supply to the DAO
   // This is equal to total DCNT supply minus tokens held in lock contract
-  const treasuryAmount = ethers.utils
-    .parseEther(decentDAOConfig.initialSupply)
-    .sub(totalAmountToLock);
+  const treasuryAmount = ethers.parseEther(decentDAOConfig.initialSupply) - totalAmountToLock;
   const tokenTransfer = await dcntTokenContract
     .connect(urbanTechFoundation)
-    .transfer(predictedSafeContract.address, treasuryAmount);
+    .transfer(await predictedSafeContract.getAddress(), treasuryAmount);
   await tokenTransfer.wait();
-  console.log(
-    `${urbanTechFoundation.address} transferred ${ethers.utils.formatEther(
-      treasuryAmount
-    )} tokens to ${predictedSafeContract.address} (UTF sending treasury to DAO)`
-  );
+  console.log(`${urbanTechFoundation.address} transferred ${ethers.formatEther(treasuryAmount)} tokens to ${await predictedSafeContract.getAddress()} (UTF sending treasury to DAO)`);
 
   //
   // Assign MINT ability of the DCNT Token to the Decent DAO
   const transferTokenMintOwnership = await dcntTokenContract
     .connect(urbanTechFoundation)
     .grantRole(
-      ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MINT_ROLE")),
-      predictedSafeContract.address
+      ethers.keccak256(ethers.toUtf8Bytes("MINT_ROLE")),
+      await predictedSafeContract.getAddress()
     );
   await transferTokenMintOwnership.wait();
-  console.log(
-    `${urbanTechFoundation.address} granted MINT_ROLE to ${predictedSafeContract.address}`
-  );
+  console.log(`${urbanTechFoundation.address} granted MINT_ROLE to ${await predictedSafeContract.getAddress()}`);
 
   // Assign UPDATE_MINT_AUTHORIZATION_ROLE ability of the DCNT Token to the Decent DAO
   const transferTokenUpdateMintOwnership = await dcntTokenContract
     .connect(urbanTechFoundation)
     .grantRole(
-      ethers.utils.keccak256(
-        ethers.utils.toUtf8Bytes("UPDATE_MINT_AUTHORIZATION_ROLE")
-      ),
-      predictedSafeContract.address
+      ethers.keccak256(ethers.toUtf8Bytes("UPDATE_MINT_AUTHORIZATION_ROLE")),
+      await predictedSafeContract.getAddress()
     );
   await transferTokenUpdateMintOwnership.wait();
-  console.log(
-    `${urbanTechFoundation.address} granted UPDATE_MINT_AUTHORIZATION_ROLE to ${predictedSafeContract.address}`
-  );
+  console.log(`${urbanTechFoundation.address} granted UPDATE_MINT_AUTHORIZATION_ROLE to ${await predictedSafeContract.getAddress()}`);
 
   // Revoke DEFAULT_ADMIN_ROLE of the DCNT Token from the deployer
   const renounceMintFromDeployer = await dcntTokenContract
     .connect(urbanTechFoundation)
     .renounceRole(
-      ethers.utils.keccak256(ethers.utils.toUtf8Bytes("DEFAULT_ADMIN_ROLE")),
+      ethers.keccak256(ethers.toUtf8Bytes("DEFAULT_ADMIN_ROLE")),
       urbanTechFoundation.address
     );
   await renounceMintFromDeployer.wait();
   console.log(`${urbanTechFoundation.address} renounced DEFAULT_ADMIN_ROLE`);
 
-  await run("verify:verify", { address: noMintContract.address });
+  await run("verify:verify", { address: await noMintContract.getAddress() });
   await run("verify:verify", {
-    address: dcntTokenContract.address,
+    address: await dcntTokenContract.getAddress(),
     constructorArguments: dcntTokenConstructorArguments,
   });
   await run("verify:verify", {
-    address: lockReleaseContract.address,
+    address: await lockReleaseContract.getAddress(),
     constructorArguments: lockReleaseConstructorArguments,
   });
 }

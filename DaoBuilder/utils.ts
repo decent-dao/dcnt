@@ -1,27 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Contract, ethers, BigNumber, utils } from "ethers";
+import { BaseContract, Contract, ethers } from "ethers";
 import crypto from "crypto";
 import { SafeTransaction, MetaTransaction, Beneficiary } from "./types";
 
 // Prefix and postfix strings come from Zodiac contracts
 import { ModuleProxyFactory } from "@fractal-framework/fractal-contracts";
-import { getCreate2Address, solidityKeccak256 } from "ethers/lib/utils";
 
-const { AddressZero } = ethers.constants;
+const { ZeroAddress } = ethers;
 
-export const buildContractCall = (
+export const  buildContractCall = async (
   contract: Contract,
   method: string,
   params: any[],
   nonce: number,
   delegateCall?: boolean,
   overrides?: Partial<SafeTransaction>
-): SafeTransaction => {
+): Promise<SafeTransaction> => {
   const data = contract.interface.encodeFunctionData(method, params);
   return buildSafeTransaction(
     Object.assign(
       {
-        to: contract.address,
+        to: await contract.getAddress(),
         data,
         operation: delegateCall ? 1 : 0,
         nonce,
@@ -33,7 +32,7 @@ export const buildContractCall = (
 
 export const buildSafeTransaction = (template: {
   to: string;
-  value?: BigNumber | number | string;
+  value?: bigint | number | string;
   data?: string;
   operation?: number;
   safeTxGas?: number | string;
@@ -51,15 +50,15 @@ export const buildSafeTransaction = (template: {
     safeTxGas: template.safeTxGas || 0,
     baseGas: template.baseGas || 0,
     gasPrice: template.gasPrice || 0,
-    gasToken: template.gasToken || AddressZero,
-    refundReceiver: template.refundReceiver || AddressZero,
+    gasToken: template.gasToken || ZeroAddress,
+    refundReceiver: template.refundReceiver || ZeroAddress,
     nonce: template.nonce,
   };
 };
 
 const encodeMetaTransaction = (tx: MetaTransaction): string => {
-  const data = utils.arrayify(tx.data);
-  const encoded = utils.solidityPack(
+  const data = ethers.toBeArray(tx.data);
+  const encoded = ethers.solidityPacked(
     ["uint8", "address", "uint256", "uint256", "bytes"],
     [tx.operation, tx.to, tx.value, data.length, data]
   );
@@ -75,7 +74,7 @@ export const buildMultiSendSafeTx = (
   txs: MetaTransaction[],
   nonce: number,
   overrides?: Partial<SafeTransaction>
-): SafeTransaction => {
+): Promise<SafeTransaction> => {
   return buildContractCall(
     multiSend,
     "multiSend",
@@ -107,9 +106,9 @@ export const generateContractByteCodeLinear = (
 };
 
 export const generateSalt = (calldata: string, saltNum: string): string => {
-  return solidityKeccak256(
+  return ethers.solidityPackedKeccak256(
     ["bytes32", "uint256"],
-    [solidityKeccak256(["bytes"], [calldata]), saltNum]
+    [ethers.solidityPackedKeccak256(["bytes"], [calldata]), saltNum]
   );
 };
 
@@ -118,17 +117,17 @@ export const generatePredictedModuleAddress = (
   salt: string,
   byteCode: string
 ): string => {
-  return getCreate2Address(
+  return ethers.getCreate2Address(
     zodiacProxyAddress,
     salt,
-    solidityKeccak256(["bytes"], [byteCode])
+    ethers.solidityPackedKeccak256(["bytes"], [byteCode])
   );
 };
 
 export const buildDeployZodiacModuleTx = (
   zodiacProxyFactoryContract: ModuleProxyFactory,
   params: string[]
-): SafeTransaction => {
+): Promise<SafeTransaction> => {
   return buildContractCall(
     zodiacProxyFactoryContract,
     "deployModule",
@@ -145,9 +144,7 @@ export const getUniqueBeneficiaries = (
     beneficiaries.reduce((acc, beneficiary) => {
       if (acc[beneficiary.address]) {
         // Sum the lockedAmount using BigNumber arithmetic
-        acc[beneficiary.address].lockedAmount = acc[
-          beneficiary.address
-        ].lockedAmount.add(beneficiary.lockedAmount);
+        acc[beneficiary.address].lockedAmount = acc[beneficiary.address].lockedAmount + beneficiary.lockedAmount;
       } else {
         // Clone the object to avoid mutating the original array
         // eslint-disable-next-line node/no-unsupported-features/es-syntax

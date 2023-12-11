@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { buildContractCall, encodeMultiSend } from "./utils";
-import { constants, Contract } from "ethers";
+import { BaseContract, Contract, ethers } from "ethers";
 import {
   KeyValuePairs,
   FractalRegistry,
@@ -10,11 +10,11 @@ import {
   LinearERC20Voting,
 } from "@fractal-framework/fractal-contracts";
 import { DecentDAOConfig, MetaTransaction, SafeTransaction } from "./types";
-import { DCNTToken, LockRelease } from "../typechain";
+import { DCNTToken, LockRelease } from "../typechain-types";
 
 export class BaseTxBuilder {
   // set base contracts and master copies that are used in the tx
-  readonly multiSendContract: Contract;
+  readonly multiSendContract: BaseContract;
   readonly predictedSafeContract: GnosisSafe;
   readonly zodiacModuleProxyFactoryContract: IModuleProxyFractory;
   readonly fractalAzoriusMasterCopyContract: IAzorius;
@@ -29,7 +29,7 @@ export class BaseTxBuilder {
     predictedSafeContract: GnosisSafe,
     dcntTokenContract: DCNTToken,
     lockReleaseContract: LockRelease,
-    multiSendContract: Contract,
+    multiSendContract: BaseContract,
     zodiacModuleProxyFactoryContract: IModuleProxyFractory,
     fractalAzoriusMasterCopyContract: IAzorius,
     fractalRegistryContract: FractalRegistry,
@@ -49,9 +49,9 @@ export class BaseTxBuilder {
     this.decentDAOConfig = decentDAOConfig;
   }
 
-  buildUpdateDAONameTx(): SafeTransaction {
+  buildUpdateDAONameTx(): Promise<SafeTransaction> {
     return buildContractCall(
-      this.fractalRegistryContract,
+      this.fractalRegistryContract as unknown as Contract,
       "updateDAOName",
       [this.decentDAOConfig.name],
       0,
@@ -59,26 +59,26 @@ export class BaseTxBuilder {
     );
   }
 
-  buildUpdateDAOSnapshotURLTx(): SafeTransaction {
+  buildUpdateDAOSnapshotURLTx(): Promise<SafeTransaction> {
     return buildContractCall(
-      this.keyValuePairsContract,
+      this.keyValuePairsContract as unknown as Contract,
       "updateValues",
-      [["snapshotURL"], [this.decentDAOConfig.snapshotENS]], // @todo update
+      [["snapshotURL"], [this.decentDAOConfig.snapshotENS]],
       0,
       false
     );
   }
 
-  buildExecInternalSafeTx(
+  async buildExecInternalSafeTx(
     signatures: string,
     internalTxs: MetaTransaction[]
-  ): SafeTransaction {
+  ): Promise<SafeTransaction> {
     const safeInternalTx = encodeMultiSend(internalTxs);
     return buildContractCall(
-      this.predictedSafeContract,
+      this.predictedSafeContract as unknown as Contract,
       "execTransaction",
       [
-        this.multiSendContract.address, // to
+        await this.multiSendContract.getAddress(), // to
         "0", // value
         this.multiSendContract.interface.encodeFunctionData("multiSend", [
           safeInternalTx,
@@ -87,8 +87,8 @@ export class BaseTxBuilder {
         "0", // tx gas
         "0", // base gas
         "0", // gas price
-        constants.AddressZero, // gas token
-        constants.AddressZero, // receiver
+        ethers.ZeroAddress, // gas token
+        ethers.ZeroAddress, // receiver
         signatures, // sigs
       ],
       0,

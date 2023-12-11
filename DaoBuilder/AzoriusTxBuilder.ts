@@ -1,4 +1,4 @@
-import { Contract } from "ethers";
+import { AbiCoder, Contract, ethers } from "ethers";
 import { BaseTxBuilder } from "./BaseTxBuilder";
 import {
   Azorius,
@@ -6,22 +6,16 @@ import {
   FractalRegistry,
   GnosisSafe,
   KeyValuePairs,
-  ModuleProxyFactory as ModuleProxyFractory,
+  ModuleProxyFactory as IModuleProxyFractory,
 } from "@fractal-framework/fractal-contracts";
-import {
-  defaultAbiCoder,
-  getCreate2Address,
-  solidityKeccak256,
-} from "ethers/lib/utils";
 import { DecentDAOConfig, SafeTransaction } from "./types";
-
 import {
   getRandomBytes,
   buildContractCall,
   generateContractByteCodeLinear,
   generateSalt,
 } from "./utils";
-import { DCNTToken, LockRelease } from "../typechain";
+import { DCNTToken, LockRelease } from "../typechain-types";
 
 export class AzoriusTxBuilder extends BaseTxBuilder {
   private encodedSetupAzoriusData: string | undefined;
@@ -42,7 +36,7 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
     dcntTokenContract: DCNTToken,
     lockReleaseContract: LockRelease,
     multiSendContract: Contract,
-    zodiacModuleProxyFactoryContract: ModuleProxyFractory,
+    zodiacModuleProxyFactoryContract: IModuleProxyFractory,
     fractalAzoriusMasterCopyContract: Azorius,
     fractalRegistryContract: FractalRegistry,
     keyValuePairsContract: KeyValuePairs,
@@ -62,48 +56,49 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
     );
     this.strategyNonce = getRandomBytes();
     this.azoriusNonce = getRandomBytes();
+  }
 
-    this.setPredictedStrategyAddress();
-    this.setPredictedAzoriusAddress();
-
+  public async setup() {
+    await this.setPredictedStrategyAddress();
+    await this.setPredictedAzoriusAddress();
     this.setContracts();
   }
 
-  public buildLinearVotingContractSetupTx(): SafeTransaction {
+  public async buildLinearVotingContractSetupTx(): Promise<SafeTransaction> {
     if (!this.linearVotingContract)
       throw new Error("lockReleaseContract contract not set");
     if (!this.azoriusContract) throw new Error("Azorius contract not set");
 
     return buildContractCall(
-      this.linearVotingContract,
+      this.linearVotingContract as unknown as Contract,
       "setAzorius", // contract function name
-      [this.azoriusContract.address],
+      [await this.azoriusContract.getAddress()],
       0,
       false
     );
   }
 
-  public buildEnableAzoriusModuleTx(): SafeTransaction {
+  public async buildEnableAzoriusModuleTx(): Promise<SafeTransaction> {
     if (!this.predictedSafeContract) throw new Error("Safe contract not set");
     if (!this.azoriusContract) throw new Error("Azorius contract not set");
     return buildContractCall(
-      this.predictedSafeContract,
+      this.predictedSafeContract as unknown as Contract,
       "enableModule",
-      [this.azoriusContract.address],
+      [await this.azoriusContract.getAddress()],
       0,
       false
     );
   }
 
-  public buildSwapOwnersTx(): SafeTransaction {
+  public async buildSwapOwnersTx(): Promise<SafeTransaction> {
     if (!this.predictedSafeContract) throw new Error("Safe contract not set");
     if (!this.azoriusContract) throw new Error("Azorius contract not set");
     return buildContractCall(
-      this.predictedSafeContract,
+      this.predictedSafeContract as unknown as Contract,
       "swapOwner",
       [
         "0x0000000000000000000000000000000000000001",
-        this.multiSendContract.address,
+        await this.multiSendContract.getAddress(),
         "0x000000000000000000000000000000000f2ac7a1",
       ],
       0,
@@ -111,12 +106,12 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
     );
   }
 
-  public buildDeployAzoriusTx(): SafeTransaction {
+  public async buildDeployAzoriusTx(): Promise<SafeTransaction> {
     return buildContractCall(
-      this.zodiacModuleProxyFactoryContract,
+      this.zodiacModuleProxyFactoryContract as unknown as Contract,
       "deployModule",
       [
-        this.fractalAzoriusMasterCopyContract.address,
+        await this.fractalAzoriusMasterCopyContract.getAddress(),
         this.encodedSetupAzoriusData,
         this.azoriusNonce,
       ],
@@ -125,21 +120,21 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
     );
   }
 
-  public signatures = (): string => {
+  public async signatures(): Promise<string> {
     return (
       "0x000000000000000000000000" +
-      this.multiSendContract.address.slice(2) +
+      (await this.multiSendContract.getAddress()).slice(2) +
       "0000000000000000000000000000000000000000000000000000000000000000" +
       "01"
     );
   };
 
-  public buildDeployStrategyTx(): SafeTransaction {
+  public async buildDeployStrategyTx(): Promise<SafeTransaction> {
     return buildContractCall(
-      this.zodiacModuleProxyFactoryContract,
+      this.zodiacModuleProxyFactoryContract as unknown as Contract,
       "deployModule",
       [
-        this.linearVotingMasterCopyContract.address,
+        await this.linearVotingMasterCopyContract.getAddress(),
         this.encodedStrategySetupData,
         this.strategyNonce,
       ],
@@ -148,8 +143,9 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
     );
   }
 
-  private setPredictedStrategyAddress() {
-    const encodedStrategyInitParams = defaultAbiCoder.encode(
+  private async setPredictedStrategyAddress() {
+    const coder = AbiCoder.defaultAbiCoder()
+    const encodedStrategyInitParams = coder.encode(
       [
         "address",
         "address",
@@ -160,8 +156,8 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
         "uint256",
       ],
       [
-        this.predictedSafeContract.address, // owner
-        this.lockReleaseContract.address, // governance
+        await this.predictedSafeContract.getAddress(), // owner
+        await this.lockReleaseContract.getAddress(), // governance
         "0x0000000000000000000000000000000000000001", // Azorius module
         this.decentDAOConfig.votingPeriodBlocks, // voting period (blocks)
         this.decentDAOConfig.proposalRequiredWeightTokens, // proposer weight, how much is needed to create a proposal.
@@ -177,47 +173,49 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
       );
 
     const strategyByteCodeLinear = generateContractByteCodeLinear(
-      this.linearVotingMasterCopyContract.address.slice(2)
+      (await this.linearVotingMasterCopyContract.getAddress()).slice(2)
     );
 
-    const strategySalt = solidityKeccak256(
+    const strategySalt = ethers.solidityPackedKeccak256(
       ["bytes32", "uint256"],
       [
-        solidityKeccak256(["bytes"], [encodedStrategySetupData]),
+        ethers.solidityPackedKeccak256(["bytes"], [encodedStrategySetupData]),
         this.strategyNonce,
       ]
     );
 
     this.encodedStrategySetupData = encodedStrategySetupData;
 
-    this.predictedStrategyAddress = getCreate2Address(
-      this.zodiacModuleProxyFactoryContract.address,
+    this.predictedStrategyAddress = ethers.getCreate2Address(
+      await this.zodiacModuleProxyFactoryContract.getAddress(),
       strategySalt,
-      solidityKeccak256(["bytes"], [strategyByteCodeLinear])
+      ethers.solidityPackedKeccak256(["bytes"], [strategyByteCodeLinear])
     );
   }
 
-  private setPredictedAzoriusAddress() {
-    const encodedInitAzoriusData = defaultAbiCoder.encode(
+  private async setPredictedAzoriusAddress() {
+    const coder = AbiCoder.defaultAbiCoder();
+    const encodedInitAzoriusData = coder.encode(
       ["address", "address", "address", "address[]", "uint32", "uint32"],
       [
-        this.predictedSafeContract.address,
-        this.predictedSafeContract.address,
-        this.predictedSafeContract.address,
+        await this.predictedSafeContract.getAddress(),
+        await this.predictedSafeContract.getAddress(),
+        await this.predictedSafeContract.getAddress(),
         [this.predictedStrategyAddress],
         this.decentDAOConfig.timeLockPeriodBlocks, // timelock period in blocks
         this.decentDAOConfig.executionPeriodBlocks, // execution period in blocks
       ]
     );
-
+    
     const encodedSetupAzoriusData =
       this.fractalAzoriusMasterCopyContract.interface.encodeFunctionData(
         "setUp",
         [encodedInitAzoriusData]
       );
 
+      
     const azoriusByteCodeLinear = generateContractByteCodeLinear(
-      this.fractalAzoriusMasterCopyContract.address.slice(2)
+      (await this.fractalAzoriusMasterCopyContract.getAddress()).slice(2)
     );
     const azoriusSalt = generateSalt(
       encodedSetupAzoriusData,
@@ -225,10 +223,10 @@ export class AzoriusTxBuilder extends BaseTxBuilder {
     );
 
     this.encodedSetupAzoriusData = encodedSetupAzoriusData;
-    this.predictedAzoriusAddress = getCreate2Address(
-      this.zodiacModuleProxyFactoryContract.address,
+    this.predictedAzoriusAddress = ethers.getCreate2Address(
+      await this.zodiacModuleProxyFactoryContract.getAddress(),
       azoriusSalt,
-      solidityKeccak256(["bytes"], [azoriusByteCodeLinear])
+      ethers.solidityPackedKeccak256(["bytes"], [azoriusByteCodeLinear])
     );
   }
 

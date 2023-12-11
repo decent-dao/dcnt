@@ -19,19 +19,19 @@ const ONE_DAY_OF_BLOCKS = ONE_HOUR_OF_BLOCKS * HOURS_PER_DAY;
 
 export const decentDAOConfig: DecentDAOConfig = {
   // name of the Token
-  tokenName: "Decent",
+  tokenName: "Test Token",
   // symbol of the Token
-  tokenSymbol: "DCNT",
+  tokenSymbol: "TT",
   // name of the DAO
-  name: "Decent DAO",
+  name: "Test Token DAO",
   // Lock Release | start timestamp of the release schedule
   unlockStartTimestamp: NOW + ONE_HOUR_OF_SECONDS * 12, // (seconds)
   // Lock Release | duration of the release schedule in seconds
   unlockDurationSeconds: ONE_DAY_OF_SECONDS, // (seconds)
   // Snapshot | url of the snapshot page
-  snapshotENS: "decent-dao.eth",
+  snapshotENS: "test-token-dao.eth",
   // DCNT Token | initial supply of the token
-  initialSupply: "100", // (+18 decimals)
+  initialSupply: "1000000000", // (+18 decimals)
   // Linear Strategy |  Length of time that voting occurs
   votingPeriodBlocks: ONE_DAY_OF_BLOCKS, // (blocks)
   // Linear Strategy | Length of time between when a proposal is passed and when it can be actually be executed.

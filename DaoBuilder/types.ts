@@ -1,8 +1,6 @@
-import type { BigNumber } from "ethers";
-
 export interface MetaTransaction {
   to: string;
-  value: string | number | BigNumber;
+  value: string | number | bigint;
   data: string;
   operation: number;
 }
@@ -29,7 +27,7 @@ export enum BeneficiaryType {
 export interface Beneficiary {
   type: BeneficiaryType;
   address: string;
-  lockedAmount: BigNumber;
+  lockedAmount: bigint;
 }
 
 export interface DecentDAOConfig {
@@ -49,6 +47,6 @@ export interface DecentDAOConfig {
   beneficiaries: {
     type: BeneficiaryType;
     address: string;
-    lockedAmount: BigNumber;
+    lockedAmount: bigint;
   }[];
 }

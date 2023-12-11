@@ -1,7 +1,7 @@
-import { loadFixture } from "ethereum-waffle";
+import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { UnlimitedMint__factory } from "../../typechain";
+import { UnlimitedMint__factory } from "../../typechain-types";
 
 describe("UnlimitedMint", async function () {
   async function deployUnlimitedMint() {
@@ -12,6 +12,6 @@ describe("UnlimitedMint", async function () {
 
   it("returns true", async function () {
     const { unlimitedMint } = await loadFixture(deployUnlimitedMint);
-    expect(await unlimitedMint.authorizeMint(ethers.constants.AddressZero, 0)).to.be.true;
+    expect(await unlimitedMint.authorizeMint(ethers.ZeroAddress, 0)).to.be.true;
   });
 });

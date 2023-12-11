@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
-import {ERC20, ERC20Votes, ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {IDCNTMintAuthorization} from "./mint/IDCNTMintAuthorization.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "./mint/IDCNTMintAuthorization.sol";
 
 /// @notice the dcnt token
-contract DCNTToken is ERC20Votes, AccessControl {
+contract DCNTToken is ERC20, ERC20Permit, ERC20Votes, AccessControl {
     IDCNTMintAuthorization public mintAuthorization;
     bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
-    bytes32 public constant UPDATE_MINT_AUTHORIZATION_ROLE = keccak256("UPDATE_MINT_AUTHORIZATION_ROLE");
+    bytes32 public constant UPDATE_MINT_AUTHORIZATION_ROLE =
+        keccak256("UPDATE_MINT_AUTHORIZATION_ROLE");
     error UnauthorizedMint();
 
     constructor(
@@ -44,7 +47,25 @@ contract DCNTToken is ERC20Votes, AccessControl {
     /// @notice public function to update contract used for mint authorization
     /// @param newMintAuthorization address to use for the new mint authorization contract
     /// @dev only accounts with `UPDATE_MINT_AUTHORIZATION_ROLE` (the DAO) are authorized to update mint authorization
-    function updateMintAuthorization(IDCNTMintAuthorization newMintAuthorization) external onlyRole(UPDATE_MINT_AUTHORIZATION_ROLE) {
+    function updateMintAuthorization(
+        IDCNTMintAuthorization newMintAuthorization
+    ) external onlyRole(UPDATE_MINT_AUTHORIZATION_ROLE) {
         mintAuthorization = newMintAuthorization;
+    }
+
+    // The following functions are overrides required by Solidity.
+
+    function _update(
+        address from,
+        address to,
+        uint256 value
+    ) internal override(ERC20, ERC20Votes) {
+        super._update(from, to, value);
+    }
+
+    function nonces(
+        address owner
+    ) public view override(ERC20Permit, Nonces) returns (uint256) {
+        return super.nonces(owner);
     }
 }
