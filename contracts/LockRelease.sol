@@ -45,20 +45,20 @@ contract LockRelease is Votes {
     error DuplicateBeneficiary();
     error NothingToRelease();
 
-    /** Deploys the LockRelease contract and sets up all beneficiary release schedules.
-     *
+    /**
+     * @notice Deploys the LockRelease contract and sets up all beneficiary release schedules.
      * @param _token address of the beneficiary
-     * @param _beneficiaries array of beneficiary addresses to create release schedules for
-     * @param _amounts array of the amount of tokens to be locked and released for each beneficiary
      * @param _start the timestamp that the release schedule begins releasing tokens at
      * @param _duration the time period in seconds that tokens are released over
+     * @param _beneficiaries array of beneficiary addresses to create release schedules for
+     * @param _amounts array of the amount of tokens to be locked and released for each beneficiary
      */
     constructor(
         address _token,
-        address[] memory _beneficiaries,
-        uint256[] memory _amounts,
         uint128 _start,
-        uint128 _duration
+        uint128 _duration,
+        address[] memory _beneficiaries,
+        uint256[] memory _amounts
     ) EIP712("DecentLockRelease", "1") {
         if (_token == address(0)) revert InvalidToken();
         if (_duration == 0) revert ZeroDuration();

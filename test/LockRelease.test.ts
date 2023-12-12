@@ -44,14 +44,16 @@ describe("LockRelease", async function () {
     let dummyContract: LockRelease;
 
     beforeEach(async function () {
-      dummyContract = await new LockRelease__factory(deployer).deploy(await dcnt.getAddress(), [], [], startTime, duration);
+      dummyContract = await new LockRelease__factory(deployer).deploy(await dcnt.getAddress(), startTime, duration, [], []);
     });
 
     it("Cannot be deployed with token as address zero", async function () {
-      const dummyContract = await new LockRelease__factory(deployer).deploy(await dcnt.getAddress(), [], [], startTime, duration);
+      const dummyContract = await new LockRelease__factory(deployer).deploy(await dcnt.getAddress(), startTime, duration, [], []);
       await expect(
         new LockRelease__factory(deployer).deploy(
           ethers.ZeroAddress,
+          startTime,
+          duration,
           [
             await beneficiary1.getAddress(),
             await beneficiary2.getAddress(),
@@ -59,8 +61,6 @@ describe("LockRelease", async function () {
             await beneficiary4.getAddress(),
           ],
           [100, 200, 300, 400],
-          startTime,
-          duration
         )
       ).to.be.revertedWithCustomError(dummyContract, "InvalidToken");
     });
@@ -69,6 +69,8 @@ describe("LockRelease", async function () {
       await expect(
         new LockRelease__factory(deployer).deploy(
           await dcnt.getAddress(),
+          startTime,
+          0,
           [
             await beneficiary1.getAddress(),
             await beneficiary2.getAddress(),
@@ -76,8 +78,6 @@ describe("LockRelease", async function () {
             await beneficiary4.getAddress(),
           ],
           [100, 200, 300, 400],
-          startTime,
-          0
         )
       ).to.be.revertedWithCustomError(dummyContract, "ZeroDuration");
     });
@@ -86,6 +86,8 @@ describe("LockRelease", async function () {
       await expect(
         new LockRelease__factory(deployer).deploy(
           await dcnt.getAddress(),
+          startTime,
+          duration,
           [
             await beneficiary1.getAddress(),
             await beneficiary2.getAddress(),
@@ -93,8 +95,6 @@ describe("LockRelease", async function () {
             await beneficiary4.getAddress(),
           ],
           [100, 200, 300],
-          startTime,
-          duration
         )
       ).to.be.revertedWithCustomError(dummyContract, "InvalidArrayLengths");
     });
@@ -103,6 +103,8 @@ describe("LockRelease", async function () {
       await expect(
         new LockRelease__factory(deployer).deploy(
           await dcnt.getAddress(),
+          startTime,
+          duration,
           [
             await beneficiary1.getAddress(),
             await beneficiary2.getAddress(),
@@ -110,8 +112,6 @@ describe("LockRelease", async function () {
             await beneficiary4.getAddress(),
           ],
           [100, 200, 300, 0],
-          startTime,
-          duration
         )
       ).to.be.revertedWithCustomError(dummyContract, "InvalidAmount");
     });
@@ -120,6 +120,8 @@ describe("LockRelease", async function () {
       await expect(
         new LockRelease__factory(deployer).deploy(
           await dcnt.getAddress(),
+          startTime,
+          duration,
           [
             ethers.ZeroAddress,
             await beneficiary2.getAddress(),
@@ -127,8 +129,6 @@ describe("LockRelease", async function () {
             await beneficiary4.getAddress(),
           ],
           [100, 200, 300, 400],
-          startTime,
-          duration
         )
       ).to.be.revertedWithCustomError(dummyContract, "InvalidBeneficiary");
     });
@@ -137,6 +137,8 @@ describe("LockRelease", async function () {
       await expect(
         new LockRelease__factory(deployer).deploy(
           await dcnt.getAddress(),
+          startTime,
+          duration,
           [
             await beneficiary1.getAddress(),
             await beneficiary1.getAddress(),
@@ -144,8 +146,6 @@ describe("LockRelease", async function () {
             await beneficiary4.getAddress(),
           ],
           [100, 200, 300, 400],
-          startTime,
-          duration
         )
       ).to.be.revertedWithCustomError(dummyContract, "DuplicateBeneficiary");
     });
@@ -155,15 +155,15 @@ describe("LockRelease", async function () {
     beforeEach(async function () {
       lockRelease = await new LockRelease__factory(deployer).deploy(
         await dcnt.getAddress(),
-          [
-            await beneficiary1.getAddress(),
-            await beneficiary2.getAddress(),
-            await beneficiary3.getAddress(),
-            await beneficiary4.getAddress(),
-          ],
-        [100, 200, 300, 400],
         startTime,
-        duration
+        duration,
+        [
+          await beneficiary1.getAddress(),
+          await beneficiary2.getAddress(),
+          await beneficiary3.getAddress(),
+          await beneficiary4.getAddress(),
+        ],
+        [100, 200, 300, 400],
       );
 
       await dcnt.connect(deployer).transfer(await lockRelease.getAddress(), 1000);

@@ -24,10 +24,10 @@ export const deployDCNTAndLockRelease = async (
   lockReleaseContract: LockRelease;
   lockReleaseConstructorArguments: [
     string,
+    number,
+    number,
     string[],
     bigint[],
-    number,
-    number
   ];
 }> => {
   //
@@ -46,12 +46,12 @@ export const deployDCNTAndLockRelease = async (
     string,
     string
   ] = [
-    ethers.parseEther(decentDAOConfig.initialSupply),
-    await deployer.getAddress(),
-    await noMintContract.getAddress(),
-    decentDAOConfig.tokenName,
-    decentDAOConfig.tokenSymbol,
-  ];
+      ethers.parseEther(decentDAOConfig.initialSupply),
+      await deployer.getAddress(),
+      await noMintContract.getAddress(),
+      decentDAOConfig.tokenName,
+      decentDAOConfig.tokenSymbol,
+    ];
   const dcntTokenContract = await new DCNTToken__factory(deployer).deploy(
     ...dcntTokenConstructorArguments
   );
@@ -71,17 +71,17 @@ export const deployDCNTAndLockRelease = async (
   // Deploy a LockRelease instance using the deduped beneficiaries
   const lockReleaseConstructorArguments: [
     string,
+    number,
+    number,
     string[],
     bigint[],
-    number,
-    number
   ] = [
-    await dcntTokenContract.getAddress(),
-    uniqueBeneficiaries.map((a) => a.address),
-    uniqueBeneficiaries.map((a) => a.lockedAmount),
-    decentDAOConfig.unlockStartTimestamp,
-    decentDAOConfig.unlockDurationSeconds,
-  ];
+      await dcntTokenContract.getAddress(),
+      decentDAOConfig.unlockStartTimestamp,
+      decentDAOConfig.unlockDurationSeconds,
+      uniqueBeneficiaries.map((a) => a.address),
+      uniqueBeneficiaries.map((a) => a.lockedAmount),
+    ];
   const lockReleaseContract = await new LockRelease__factory(deployer).deploy(
     ...lockReleaseConstructorArguments
   );
