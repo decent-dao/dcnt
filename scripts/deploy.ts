@@ -6,7 +6,6 @@ import { deployDCNTAndLockRelease } from "../DaoBuilder/dcntTokenDeploy";
 import { encodeMultiSend } from "../DaoBuilder/utils";
 import { decentDAOConfig } from "../config/dcntDAOConfig";
 import { SafeTransaction } from "../DaoBuilder/types";
-import { DCNTToken__factory, LockRelease__factory } from "../typechain-types";
 import { Contract } from "ethers";
 
 async function createDAO() {
@@ -76,10 +75,6 @@ async function createDAO() {
   console.log(`${twineAssetsLimited.address} transferred ${ethers.formatEther(amountToLockForPurchasers)} tokens to ${await lockReleaseContract.getAddress()} (TAL locking up Purchaser tokens)`);
 
   const { predictedSafeContract, createSafeTx } = await getSafeData(multisendContract);
-
-  // // temp shit
-  // const dcntTokenContract = DCNTToken__factory.connect("0x603B18914F60C8041F84CD5d6952d92491E9F33E");
-  // const lockReleaseContract = LockRelease__factory.connect("0xC5b015a7ACC390062fA48A7a3BbB260e0b1342d8");
 
   //
   // Build Token Voting Contract

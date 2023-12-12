@@ -190,7 +190,7 @@ export const getSafeData = async (
   );
 
   const createSafeTx = await buildContractCall(
-    gnosisSafeFactoryContract,
+    gnosisSafeFactoryContract as unknown as Contract,
     "createProxyWithNonce",
     [await gnosisSafeSingletonContract.getAddress(), createGnosisCalldata, saltNum],
     0,
