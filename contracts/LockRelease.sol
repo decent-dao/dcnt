@@ -113,7 +113,7 @@ contract LockRelease is Votes {
         emit ScheduleStarted(_beneficiaries, _amounts);
     }
 
-    /** 
+    /**
      * @notice Release all releasable tokens to the caller.
      */
     function release() external {
@@ -123,7 +123,7 @@ contract LockRelease is Votes {
 
         // Update released amount
         schedules[msg.sender].released =
-            schedules[msg.sender].released +
+            getReleased(msg.sender) +
             releasable;
 
         // Burn the released voting units
@@ -135,82 +135,79 @@ contract LockRelease is Votes {
         emit TokensReleased(msg.sender, releasable);
     }
 
-    /** 
+    /**
      * @notice Returns the total tokens that will be released to the beneficiary over the duration.
-     * @param _beneficiary address of the beneficiary
+     * @param beneficiary address of the beneficiary
      * @return uint256 total tokens that will be released to the beneficiary
      */
-    function getTotal(address _beneficiary) external view returns (uint256) {
-        return schedules[_beneficiary].total;
+    function getTotal(address beneficiary) public view returns (uint256) {
+        return schedules[beneficiary].total;
     }
 
-    /** 
+    /**
      * @notice Returns the total tokens already released to the beneficiary.
-     * @param _beneficiary address of the beneficiary
+     * @param beneficiary address of the beneficiary
      * @return uint256 total tokens already released to the beneficiary
      */
-    function getReleased(address _beneficiary) public view returns (uint256) {
-        return schedules[_beneficiary].released;
+    function getReleased(address beneficiary) public view returns (uint256) {
+        return schedules[beneficiary].released;
     }
 
     /**
      * @notice Returns the total tokens that have matured until now according to the release schedule.
-     * @param _beneficiary address of the beneficiary
+     * @param beneficiary address of the beneficiary
      * @return uint256 total tokens that have matured
      */
     function getTotalMatured(
-        address _beneficiary
+        address beneficiary
     ) public view returns (uint256) {
         if (block.timestamp < start) return 0;
-
-        Schedule memory schedule = schedules[_beneficiary];
-
-        if (block.timestamp >= start + duration) return schedule.total;
-
-        return (schedule.total * (block.timestamp - start)) / duration;
+        uint256 total = getTotal(beneficiary);
+        if (block.timestamp >= start + duration) return total;
+        return (total * (block.timestamp - start)) / duration;
     }
 
     /**
      * @notice Returns the total tokens that can be released now.
-     * @param _beneficiary address of the beneficiary
+     * @param beneficiary address of the beneficiary
      * @return uint256 the total tokens that can be released now
      */
-    function getReleasable(address _beneficiary) public view returns (uint256) {
-        return getTotalMatured(_beneficiary) - getReleased(_beneficiary);
+    function getReleasable(address beneficiary) public view returns (uint256) {
+        return getTotalMatured(beneficiary) - getReleased(beneficiary);
     }
 
     /**
      * @notice Returns the current amount of votes that the account has.
-     * @param _account the address to check current votes for
+     * @param account the address to check current votes for
      * @return uint256 the current amount of votes that the account has
      */
-    function getVotes(address _account) public view override returns (uint256) {
-        return super.getVotes(_account) + IERC5805(token).getVotes(_account);
+    function getVotes(address account) public view override returns (uint256) {
+        return super.getVotes(account) + IERC5805(token).getVotes(account);
     }
 
     /**
      * @notice Returns the amount of votes that the account had at a specific moment in the past.
-     * @param _account the address to check current votes for
-     * @param _blockNumber the past block number to check the account's votes at
+     * @param account the address to check current votes for
+     * @param blockNumber the past block number to check the account's votes at
      * @return uint256 the amount of votes
      */
     function getPastVotes(
-        address _account,
-        uint256 _blockNumber
+        address account,
+        uint256 blockNumber
     ) public view virtual override returns (uint256) {
         return
-            super.getPastVotes(_account, _blockNumber) +
-            IERC5805(token).getPastVotes(_account, _blockNumber);
+            super.getPastVotes(account, blockNumber) +
+            IERC5805(token).getPastVotes(account, blockNumber);
     }
 
     /**
      * @notice Returns the current number of voting units held by an account.
-     * @param _account the address to check voting units for
+     * @param account the address to check voting units for
      * @return uint256 the amount of voting units
      */
     function _getVotingUnits(
-        address _account
+        address account
     ) internal view override returns (uint256) {
-        return schedules[_account].total - schedules[_account].released;
+        return getTotal(account) - getReleased(account);
     }
 }
