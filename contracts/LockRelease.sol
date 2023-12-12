@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/governance/utils/Votes.sol";
 
 /**
- * This contract creates token release schedules to linearly release those tokens over the defined duration.
+ * @notice This contract creates token release schedules to linearly release those tokens over the defined duration.
  */
 contract LockRelease is Votes {
     using SafeERC20 for IERC20;
@@ -99,7 +99,9 @@ contract LockRelease is Votes {
         emit ScheduleStarted(_beneficiaries, _amounts);
     }
 
-    /** Release all releasable tokens to the caller. */
+    /** 
+     * @notice Release all releasable tokens to the caller.
+     */
     function release() external {
         uint256 releasable = getReleasable(msg.sender);
 
@@ -119,8 +121,8 @@ contract LockRelease is Votes {
         emit TokensReleased(msg.sender, releasable);
     }
 
-    /** Returns the total tokens that will be released to the beneficiary over the duration.
-     *
+    /** 
+     * @notice Returns the total tokens that will be released to the beneficiary over the duration.
      * @param _beneficiary address of the beneficiary
      * @return uint256 total tokens that will be released to the beneficiary
      */
@@ -128,8 +130,8 @@ contract LockRelease is Votes {
         return schedules[_beneficiary].total;
     }
 
-    /** Returns the total tokens already released to the beneficiary.
-     *
+    /** 
+     * @notice Returns the total tokens already released to the beneficiary.
      * @param _beneficiary address of the beneficiary
      * @return uint256 total tokens already released to the beneficiary
      */
@@ -137,8 +139,8 @@ contract LockRelease is Votes {
         return schedules[_beneficiary].released;
     }
 
-    /** Returns the total tokens that have matured until now according to the release schedule.
-     *
+    /**
+     * @notice Returns the total tokens that have matured until now according to the release schedule.
      * @param _beneficiary address of the beneficiary
      * @return uint256 total tokens that have matured
      */
@@ -154,8 +156,8 @@ contract LockRelease is Votes {
         return (schedule.total * (block.timestamp - start)) / duration;
     }
 
-    /** Returns the total tokens that can be released now.
-     *
+    /**
+     * @notice Returns the total tokens that can be released now.
      * @param _beneficiary address of the beneficiary
      * @return uint256 the total tokens that can be released now
      */
@@ -163,8 +165,8 @@ contract LockRelease is Votes {
         return getTotalMatured(_beneficiary) - getReleased(_beneficiary);
     }
 
-    /** Returns the current amount of votes that the account has.
-     *
+    /**
+     * @notice Returns the current amount of votes that the account has.
      * @param _account the address to check current votes for
      * @return uint256 the current amount of votes that the account has
      */
@@ -172,8 +174,8 @@ contract LockRelease is Votes {
         return super.getVotes(_account) + IERC5805(token).getVotes(_account);
     }
 
-    /** Returns the amount of votes that the account had at a specific moment in the past.
-     *
+    /**
+     * @notice Returns the amount of votes that the account had at a specific moment in the past.
      * @param _account the address to check current votes for
      * @param _blockNumber the past block number to check the account's votes at
      * @return uint256 the amount of votes
@@ -187,7 +189,8 @@ contract LockRelease is Votes {
             IERC5805(token).getPastVotes(_account, _blockNumber);
     }
 
-    /** Returns the current number of voting units held by an account.
+    /**
+     * @notice Returns the current number of voting units held by an account.
      * @param _account the address to check voting units for
      * @return uint256 the amount of voting units
      */
