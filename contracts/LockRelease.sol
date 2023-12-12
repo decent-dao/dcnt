@@ -61,6 +61,13 @@ contract LockRelease is Votes {
         start = _start;
         duration = _duration;
 
+        _addSchedules(_beneficiaries, _amounts);
+    }
+
+    function _addSchedules(
+        address[] memory _beneficiaries,
+        uint256[] memory _amounts
+    ) private {
         if (_beneficiaries.length != _amounts.length)
             revert InvalidArrayLengths();
 
