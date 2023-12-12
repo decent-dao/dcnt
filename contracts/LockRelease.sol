@@ -67,7 +67,7 @@ contract LockRelease is Votes {
     function _addSchedules(
         address[] memory _beneficiaries,
         uint256[] memory _amounts
-    ) private {
+    ) private returns (uint256 totalAmount) {
         if (_beneficiaries.length != _amounts.length)
             revert InvalidArrayLengths();
 
@@ -87,6 +87,9 @@ contract LockRelease is Votes {
 
             // beneficiary delegates to themselves
             _delegate(beneficiary, beneficiary);
+
+            // increase total
+            totalAmount += amount;
 
             unchecked {
                 ++i;
