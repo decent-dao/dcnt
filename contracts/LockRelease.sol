@@ -64,6 +64,20 @@ contract LockRelease is Votes {
         _addSchedules(_beneficiaries, _amounts);
     }
 
+    /**
+     * @notice Add new schedules to the contract, utilizing existing token, start, and duration
+     * @dev Tokens are pulled from msg.sender directly in this function call
+     * @param _beneficiaries array of beneficiary addresses to create release schedules for
+     * @param _amounts array of the amount of tokens to be locked and released for each beneficiary
+     */
+    function addSchedules(
+        address[] memory _beneficiaries,
+        uint256[] memory _amounts
+    ) public {
+        uint256 totalAmount = _addSchedules(_beneficiaries, _amounts);
+        IERC20(token).transferFrom(msg.sender, address(this), totalAmount);
+    }
+
     function _addSchedules(
         address[] memory _beneficiaries,
         uint256[] memory _amounts

@@ -17,13 +17,15 @@ describe("LockRelease", async function () {
   let beneficiary2: Signer;
   let beneficiary3: Signer;
   let beneficiary4: Signer;
+  let beneficiary5: Signer;
+  let beneficiary6: Signer;
   let dcnt: DCNTToken;
   let lockRelease: LockRelease;
   let startTime: number;
   let duration: number;
 
   beforeEach(async function () {
-    [deployer, owner, beneficiary1, beneficiary2, beneficiary3, beneficiary4] =
+    [deployer, owner, beneficiary1, beneficiary2, beneficiary3, beneficiary4, beneficiary5, beneficiary6] =
       await ethers.getSigners();
 
     // Token unlocks start in 100 seconds from current time, and vesting lasts for 100 seconds
@@ -618,6 +620,62 @@ describe("LockRelease", async function () {
       // deployer isn't a beneficiary, so shouldn't have any releasable funds
       expect(await lockRelease.getReleasable(await deployer.getAddress())).to.eq(0);
       await expect(lockRelease.connect(deployer).release()).to.be.revertedWithCustomError(lockRelease, "NothingToRelease");
+    });
+
+    describe("Adding more schedules after deployment", function () {
+      it("Fails if there are duplicate beneficiaries", async function () {
+        await expect(lockRelease.addSchedules([await beneficiary1.getAddress()], [100]))
+          .to.be.revertedWithCustomError(lockRelease, "DuplicateBeneficiary");
+      });
+
+      it("Fails when msg.sender hasn't allowed token approvals", async function () {
+        await expect(lockRelease.addSchedules([await beneficiary5.getAddress()], [100]))
+          .to.be.revertedWithCustomError(dcnt, "ERC20InsufficientAllowance");
+      });
+
+      describe("When allowance has been set", async function () {
+        const first = 600, second = 400;
+
+        beforeEach(async function () {
+          await dcnt.approve(await lockRelease.getAddress(), first + second);
+        });
+
+        it("Allows more schedules to be added", async function () {
+          await lockRelease.addSchedules([await beneficiary5.getAddress(), await beneficiary6.getAddress()], [first, second]);
+          expect(await lockRelease.getTotal(await beneficiary5.getAddress())).to.equal(first);
+          expect(await lockRelease.getTotal(await beneficiary6.getAddress())).to.equal(second);
+        });
+      });
+
+      describe("When release schedule is in effect", function () {
+        const amount = 100;
+
+        beforeEach(async function () {
+          await dcnt.approve(await lockRelease.getAddress(), amount);
+          await time.increaseTo(startTime + 10); // 10% thru release
+          await lockRelease.addSchedules([await beneficiary5.getAddress()], [amount]);
+        });
+
+        it("Allows new beneficiary to immediately claim their released tokens", async function () {
+          await lockRelease.connect(beneficiary5).release();
+          expect(await dcnt.balanceOf(beneficiary5)).to.be.greaterThan(10);
+        });
+      });
+
+      describe("When release schedule is over", function () {
+        const amount = 100;
+
+        beforeEach(async function () {
+          await dcnt.approve(await lockRelease.getAddress(), amount);
+          await time.increaseTo(startTime + duration); // 100% thru release
+          await lockRelease.addSchedules([await beneficiary5.getAddress()], [amount]);
+        });
+
+        it("Allows new beneficiary to immediately claim their released tokens", async function () {
+          await lockRelease.connect(beneficiary5).release();
+          expect(await dcnt.balanceOf(beneficiary5)).to.be.equal(100);
+        });
+      });
     });
   });
 });
