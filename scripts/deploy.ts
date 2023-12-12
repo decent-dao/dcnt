@@ -33,7 +33,7 @@ async function createDAO() {
     keyValuePairContract,
     linearVotingMasterCopyContract,
     multisendContract,
-  } = await getMasterCopies(theDecentFoundation);
+  } = await getMasterCopies();
 
   //
   // Deploy DCNT Token & Lock Release Contracts

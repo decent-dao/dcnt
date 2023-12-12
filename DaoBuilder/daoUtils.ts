@@ -48,9 +48,7 @@ async function getFractalContractAddressesByNetworkName() {
 }
 /* eslint-enable node/no-unsupported-features/es-syntax */
 
-export const getMasterCopies = async (
-  theDecentFoundation: Signer,
-): Promise<{
+export const getMasterCopies = async (): Promise<{
   zodiacModuleProxyFactoryContract: IModuleProxyFractory;
   fractalAzoriusMasterCopyContract: IAzorius;
   fractalRegistryContract: IFractalRegistry;
