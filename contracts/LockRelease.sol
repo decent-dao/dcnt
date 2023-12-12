@@ -25,14 +25,8 @@ contract LockRelease is Votes {
     /** Represents a release schedule for a specific beneficiary. */
     mapping(address => Schedule) private schedules;
 
-    /** Emitted when a release schedule is created. */
-    event ScheduleStarted(
-        address token,
-        address[] beneficiaries,
-        uint256[] amounts,
-        uint128 start,
-        uint128 duration
-    );
+    /** Emitted when a group of release schedules is created. */
+    event ScheduleStarted(address[] beneficiaries, uint256[] amounts);
 
     /** Emitted when tokens are released to a recipient. */
     event TokensReleased(address indexed beneficiary, uint256 amount);
@@ -91,13 +85,7 @@ contract LockRelease is Votes {
         start = _start;
         duration = _duration;
 
-        emit ScheduleStarted(
-            _token,
-            _beneficiaries,
-            _amounts,
-            _start,
-            _duration
-        );
+        emit ScheduleStarted(_beneficiaries, _amounts);
     }
 
     /** Release all releasable tokens to the caller. */
