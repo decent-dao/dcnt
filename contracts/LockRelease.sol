@@ -59,7 +59,7 @@ contract LockRelease is Votes {
         uint256[] memory _amounts,
         uint128 _start,
         uint128 _duration
-    ) EIP712("DecentLockRelease", "1.0.0") {
+    ) EIP712("DecentLockRelease", "1") {
         if (_token == address(0)) revert InvalidToken();
         if (_duration == 0) revert ZeroDuration();
         if (_beneficiaries.length != _amounts.length)
