@@ -32,7 +32,7 @@ describe("LockRelease", async function () {
 
     // Deploy DCNT token
     dcnt = await new DCNTToken__factory(deployer).deploy(
-      1000,
+      2000,
       await owner.getAddress(),
       await (await new UnlimitedMint__factory(deployer).deploy()).getAddress(),
       "Test Token",
@@ -176,7 +176,7 @@ describe("LockRelease", async function () {
 
     it("Is initialized correctly", async function () {
       expect(await dcnt.balanceOf(await lockRelease.getAddress())).to.eq(1000);
-      expect(await dcnt.balanceOf(await deployer.getAddress())).to.eq(0);
+      expect(await dcnt.balanceOf(await deployer.getAddress())).to.eq(1000);
       expect(await dcnt.balanceOf(await beneficiary1.getAddress())).to.eq(0);
       expect(await dcnt.balanceOf(await beneficiary2.getAddress())).to.eq(0);
       expect(await dcnt.balanceOf(await beneficiary3.getAddress())).to.eq(0);
@@ -244,7 +244,7 @@ describe("LockRelease", async function () {
       await time.increaseTo(startTime + 10);
 
       expect(await dcnt.balanceOf(await lockRelease.getAddress())).to.eq(1000);
-      expect(await dcnt.balanceOf(await deployer.getAddress())).to.eq(0);
+      expect(await dcnt.balanceOf(await deployer.getAddress())).to.eq(1000);
       expect(await dcnt.balanceOf(await beneficiary1.getAddress())).to.eq(0);
       expect(await dcnt.balanceOf(await beneficiary2.getAddress())).to.eq(0);
       expect(await dcnt.balanceOf(await beneficiary3.getAddress())).to.eq(0);
@@ -362,7 +362,7 @@ describe("LockRelease", async function () {
           - beneficiary3Released2
           - beneficiary4Released2
       );
-      expect(await dcnt.balanceOf(await deployer.getAddress())).to.eq(0);
+      expect(await dcnt.balanceOf(await deployer.getAddress())).to.eq(1000);
       expect(await dcnt.balanceOf(await beneficiary1.getAddress())).to.eq(
         beneficiary1Released1 + beneficiary1Released2
       );
