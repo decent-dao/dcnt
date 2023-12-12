@@ -136,6 +136,18 @@ contract LockRelease is Votes {
     }
 
     /**
+     * @notice Allows an existing beneficiary to update their address
+     * @param newBeneficiary address to swap existing beneficiary with
+     */
+    function updateBeneficiary(address newBeneficiary) public {
+        // copy original beneficiary's Schedule into new beneficiary
+        schedules[newBeneficiary] = schedules[msg.sender];
+
+        // delete original beneficiary's Schedule
+        delete schedules[msg.sender];
+    }
+
+    /**
      * @notice Returns the total tokens that will be released to the beneficiary over the duration.
      * @param beneficiary address of the beneficiary
      * @return uint256 total tokens that will be released to the beneficiary
