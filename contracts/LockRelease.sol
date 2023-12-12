@@ -56,6 +56,11 @@ contract LockRelease is Votes {
     ) EIP712("DecentLockRelease", "1") {
         if (_token == address(0)) revert InvalidToken();
         if (_duration == 0) revert ZeroDuration();
+
+        token = _token;
+        start = _start;
+        duration = _duration;
+
         if (_beneficiaries.length != _amounts.length)
             revert InvalidArrayLengths();
 
@@ -80,10 +85,6 @@ contract LockRelease is Votes {
                 ++i;
             }
         }
-
-        token = _token;
-        start = _start;
-        duration = _duration;
 
         emit ScheduleStarted(_beneficiaries, _amounts);
     }
