@@ -12,7 +12,7 @@ import {
 
 describe("LockRelease", async function () {
   let deployer: Signer;
-  let owner: Signer;
+  let dcntOwner: Signer;
   let beneficiary1: Signer;
   let beneficiary2: Signer;
   let beneficiary3: Signer;
@@ -25,7 +25,7 @@ describe("LockRelease", async function () {
   let duration: number;
 
   beforeEach(async function () {
-    [deployer, owner, beneficiary1, beneficiary2, beneficiary3, beneficiary4, beneficiary5, beneficiary6] =
+    [deployer, dcntOwner, beneficiary1, beneficiary2, beneficiary3, beneficiary4, beneficiary5, beneficiary6] =
       await ethers.getSigners();
 
     // Token unlocks start in 100 seconds from current time, and vesting lasts for 100 seconds
@@ -35,7 +35,7 @@ describe("LockRelease", async function () {
     // Deploy DCNT token
     dcnt = await new DCNTToken__factory(deployer).deploy(
       2000,
-      await owner.getAddress(),
+      await dcntOwner.getAddress(),
       await (await new UnlimitedMint__factory(deployer).deploy()).getAddress(),
       "Test Token",
       "TEST"
