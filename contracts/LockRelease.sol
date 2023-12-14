@@ -71,7 +71,7 @@ contract LockRelease is Votes, Ownable {
     function addSchedules(
         address[] memory _beneficiaries,
         uint256[] memory _amounts
-    ) public {
+    ) public onlyOwner {
         uint256 totalAmount = _addSchedules(_beneficiaries, _amounts);
         IERC20(token).transferFrom(msg.sender, address(this), totalAmount);
     }
