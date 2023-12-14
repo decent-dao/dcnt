@@ -34,6 +34,8 @@ async function createDAO() {
     multisendContract,
   } = await getMasterCopies();
 
+  const { predictedSafeContract, createSafeTx } = await getSafeData(multisendContract);
+
   //
   // Deploy DCNT Token & Lock Release Contracts
   const {
@@ -73,8 +75,6 @@ async function createDAO() {
   const twineAssetsToLockRelease = await dcntTokenContract.connect(twineAssetsLimited).transfer(await lockReleaseContract.getAddress(), amountToLockForPurchasers);
   await twineAssetsToLockRelease.wait();
   console.log(`${twineAssetsLimited.address} transferred ${ethers.formatEther(amountToLockForPurchasers)} tokens to ${await lockReleaseContract.getAddress()} (TAL locking up Purchaser tokens)`);
-
-  const { predictedSafeContract, createSafeTx } = await getSafeData(multisendContract);
 
   //
   // Build Token Voting Contract
