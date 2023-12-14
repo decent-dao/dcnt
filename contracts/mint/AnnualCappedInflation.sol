@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IDCNTMintAuthorization.sol";
-import "hardhat/console.sol";
 
 /// @notice an implementation of IDCNTMintAuthorization that limits mint requests to a capped annual inflation
 contract AnnualCappedInflation is Ownable, IDCNTMintAuthorization {

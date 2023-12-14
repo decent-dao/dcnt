@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 /// @notice interface that all potential mint authorization contracts must conform to
 interface IDCNTMintAuthorization {
     /// @notice function to confirm if a given mint action is authorized or not
