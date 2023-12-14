@@ -2,16 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/governance/utils/Votes.sol";
 
 /**
  * @notice This contract creates token release schedules to linearly release those tokens over the defined duration.
  */
 contract LockRelease is Votes {
-    using SafeERC20 for IERC20;
-
     /** Represents a release schedule for a specific beneficiary. */
     struct Schedule {
         uint256 total; // total tokens that the beneficiary will receive over the duration
@@ -130,7 +126,7 @@ contract LockRelease is Votes {
         _transferVotingUnits(msg.sender, address(0), releasable);
 
         // Transfer tokens to recipient
-        IERC20(token).safeTransfer(msg.sender, releasable);
+        IERC20(token).transfer(msg.sender, releasable);
 
         emit TokensReleased(msg.sender, releasable);
     }
