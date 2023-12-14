@@ -22,9 +22,9 @@ contract DCNTToken is ERC20, ERC20Permit, ERC20Votes, AccessControl {
         string memory _name,
         string memory _symbol
     ) ERC20(_name, _symbol) ERC20Permit(_name) {
+        mintAuthorization = _mintAuthorization;
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);
         _mint(msg.sender, _supply);
-        mintAuthorization = _mintAuthorization;
     }
 
     /// @notice public function to be used for minting new tokens
