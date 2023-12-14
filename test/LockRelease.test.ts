@@ -13,6 +13,7 @@ import {
 describe("LockRelease", async function () {
   let deployer: Signer;
   let dcntOwner: Signer;
+  let lockReleaseOwner: Signer;
   let beneficiary1: Signer;
   let beneficiary2: Signer;
   let beneficiary3: Signer;
@@ -25,7 +26,7 @@ describe("LockRelease", async function () {
   let duration: number;
 
   beforeEach(async function () {
-    [deployer, dcntOwner, beneficiary1, beneficiary2, beneficiary3, beneficiary4, beneficiary5, beneficiary6] =
+    [deployer, dcntOwner, lockReleaseOwner, beneficiary1, beneficiary2, beneficiary3, beneficiary4, beneficiary5, beneficiary6] =
       await ethers.getSigners();
 
     // Token unlocks start in 100 seconds from current time, and vesting lasts for 100 seconds
@@ -46,13 +47,28 @@ describe("LockRelease", async function () {
     let dummyContract: LockRelease;
 
     beforeEach(async function () {
-      dummyContract = await new LockRelease__factory(deployer).deploy(await dcnt.getAddress(), startTime, duration, [], []);
+      dummyContract = await new LockRelease__factory(deployer).deploy(
+        await lockReleaseOwner.getAddress(),
+        await dcnt.getAddress(),
+        startTime,
+        duration,
+        [],
+        []
+      );
     });
 
     it("Cannot be deployed with token as address zero", async function () {
-      const dummyContract = await new LockRelease__factory(deployer).deploy(await dcnt.getAddress(), startTime, duration, [], []);
+      const dummyContract = await new LockRelease__factory(deployer).deploy(
+        await lockReleaseOwner.getAddress(),
+        await dcnt.getAddress(),
+        startTime,
+        duration,
+        [],
+        []
+      );
       await expect(
         new LockRelease__factory(deployer).deploy(
+          await lockReleaseOwner.getAddress(),
           ethers.ZeroAddress,
           startTime,
           duration,
@@ -70,6 +86,7 @@ describe("LockRelease", async function () {
     it("Cannot be deployed with a duration of zero", async function () {
       await expect(
         new LockRelease__factory(deployer).deploy(
+          await lockReleaseOwner.getAddress(),
           await dcnt.getAddress(),
           startTime,
           0,
@@ -87,6 +104,7 @@ describe("LockRelease", async function () {
     it("Cannot be deployed with invalid array lengths", async function () {
       await expect(
         new LockRelease__factory(deployer).deploy(
+          await lockReleaseOwner.getAddress(),
           await dcnt.getAddress(),
           startTime,
           duration,
@@ -104,6 +122,7 @@ describe("LockRelease", async function () {
     it("Cannot be deployed if one of the amounts is zero", async function () {
       await expect(
         new LockRelease__factory(deployer).deploy(
+          await lockReleaseOwner.getAddress(),
           await dcnt.getAddress(),
           startTime,
           duration,
@@ -121,6 +140,7 @@ describe("LockRelease", async function () {
     it("Cannot be deployed if one of the beneficiaries is address zero", async function () {
       await expect(
         new LockRelease__factory(deployer).deploy(
+          await lockReleaseOwner.getAddress(),
           await dcnt.getAddress(),
           startTime,
           duration,
@@ -138,6 +158,7 @@ describe("LockRelease", async function () {
     it("Cannot be deployed with duplicate beneficiaries", async function () {
       await expect(
         new LockRelease__factory(deployer).deploy(
+          await lockReleaseOwner.getAddress(),
           await dcnt.getAddress(),
           startTime,
           duration,
@@ -156,6 +177,7 @@ describe("LockRelease", async function () {
   describe("LockRelease Functionality", function () {
     beforeEach(async function () {
       lockRelease = await new LockRelease__factory(deployer).deploy(
+        await lockReleaseOwner.getAddress(),
         await dcnt.getAddress(),
         startTime,
         duration,

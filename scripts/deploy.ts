@@ -47,7 +47,7 @@ async function createDAO() {
     totalAmountToLock,
     amountToLockForInvestors,
     amountToLockForPurchasers,
-  } = await deployDCNTAndLockRelease(urbanTechFoundation, decentDAOConfig);
+  } = await deployDCNTAndLockRelease(urbanTechFoundation, predictedSafeContract, decentDAOConfig);
 
   //
   // Transfer all tokens to be locked up from

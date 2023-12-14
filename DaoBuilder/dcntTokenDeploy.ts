@@ -10,10 +10,12 @@ import {
 } from "../typechain-types";
 import { getUniqueBeneficiaries } from "./utils";
 import { Signer } from "ethers";
+import { GnosisSafe } from "@fractal-framework/fractal-contracts";
 
 export const deployDCNTAndLockRelease = async (
   deployer: Signer,
-  decentDAOConfig: DecentDAOConfig
+  predictedSafeAddress: GnosisSafe,
+  decentDAOConfig: DecentDAOConfig,
 ): Promise<{
   noMintContract: NoMint;
   totalAmountToLock: bigint;
@@ -23,6 +25,7 @@ export const deployDCNTAndLockRelease = async (
   dcntTokenConstructorArguments: [bigint, string, string, string, string];
   lockReleaseContract: LockRelease;
   lockReleaseConstructorArguments: [
+    string,
     string,
     number,
     number,
@@ -71,12 +74,14 @@ export const deployDCNTAndLockRelease = async (
   // Deploy a LockRelease instance using the deduped beneficiaries
   const lockReleaseConstructorArguments: [
     string,
+    string,
     number,
     number,
     string[],
     bigint[],
   ] = [
       await dcntTokenContract.getAddress(),
+      await predictedSafeAddress.getAddress(),
       decentDAOConfig.unlockStartTimestamp,
       decentDAOConfig.unlockDurationSeconds,
       uniqueBeneficiaries.map((a) => a.address),
