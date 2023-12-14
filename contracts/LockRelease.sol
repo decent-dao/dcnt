@@ -87,7 +87,7 @@ contract LockRelease is Votes {
 
             address beneficiary = _beneficiaries[i];
             if (beneficiary == address(0)) revert InvalidBeneficiary();
-            if (schedules[beneficiary].total != 0)
+            if (getTotal(beneficiary) != 0)
                 revert DuplicateBeneficiary();
 
             schedules[beneficiary] = Schedule(amount, 0);
@@ -95,7 +95,7 @@ contract LockRelease is Votes {
             // mint the beneficiary voting units
             _transferVotingUnits(address(0), beneficiary, amount);
 
-            // beneficiary delegates to themselves
+            // beneficiary delegates to themself
             _delegate(beneficiary, beneficiary);
 
             // increase total
