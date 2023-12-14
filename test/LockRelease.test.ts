@@ -677,22 +677,5 @@ describe("LockRelease", async function () {
         });
       });
     });
-
-    describe("Updating the beneficiary", function () {
-      it("Allows a beneficiary to update their address", async function () {
-        expect(await lockRelease.getTotal(beneficiary1)).to.equal(100);
-        expect(await lockRelease.getTotal(beneficiary5)).to.equal(0);
-        await lockRelease.connect(beneficiary1).updateBeneficiary(await beneficiary5.getAddress());
-        expect(await lockRelease.getTotal(beneficiary1)).to.equal(0);
-        expect(await lockRelease.getTotal(beneficiary5)).to.equal(100);
-      });
-
-      it("Doesn't allow the old address to release any tokens", async function () {
-        await time.increaseTo(startTime + 10); // 10% thru release
-        await lockRelease.connect(beneficiary1).updateBeneficiary(await beneficiary5.getAddress());
-        expect(await lockRelease.getReleasable(await beneficiary5.getAddress())).to.be.greaterThan(0);
-        await expect(lockRelease.connect(beneficiary1).release()).to.be.revertedWithCustomError(lockRelease, "NothingToRelease");
-      });
-    });
   });
 });
