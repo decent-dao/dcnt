@@ -20,31 +20,31 @@ const ONE_DAY_OF_BLOCKS = ONE_HOUR_OF_BLOCKS * HOURS_PER_DAY;
 
 export const decentDAOConfig: DecentDAOConfig = {
   // name of the Token
-  tokenName: "Test Token",
+  tokenName: "Decent",
   // symbol of the Token
-  tokenSymbol: "TT",
+  tokenSymbol: "DCNT",
   // name of the DAO
-  name: "Test Token DAO",
+  name: "Decent DAO",
   // Lock Release | start timestamp of the release schedule
-  unlockStartTimestamp: NOW + ONE_HOUR_OF_SECONDS * 12, // (seconds)
+  unlockStartTimestamp: NOW + ONE_DAY_OF_SECONDS * 365, // (seconds)
   // Lock Release | duration of the release schedule in seconds
-  unlockDurationSeconds: ONE_DAY_OF_SECONDS, // (seconds)
+  unlockDurationSeconds: ONE_DAY_OF_SECONDS * 365 * 2, // (seconds)
   // Snapshot | url of the snapshot page
-  snapshotENS: "test-token-dao.eth",
+  snapshotENS: "decent-dao.eth",
   // DCNT Token | initial supply of the token
   initialSupply: "1000000000", // (+18 decimals)
   // Linear Strategy |  Length of time that voting occurs
-  votingPeriodBlocks: ONE_DAY_OF_BLOCKS, // (blocks)
+  votingPeriodBlocks: ONE_DAY_OF_BLOCKS * 7, // (blocks)
   // Linear Strategy | Length of time between when a proposal is passed and when it can be actually be executed.
-  timeLockPeriodBlocks: ONE_MINUTE_OF_BLOCKS * 10, // (blocks)
+  timeLockPeriodBlocks: ONE_DAY_OF_BLOCKS, // (blocks)
   // Linear Strategy | Length of time that a successful proposal has to be executed, after which is will expire.
-  executionPeriodBlocks: ONE_DAY_OF_BLOCKS * 12, // (blocks)
+  executionPeriodBlocks: ONE_DAY_OF_BLOCKS * 7, // (blocks)
   // Linear Strategy | Percentage of total possible tokens that must vote in order to consider a proposal result valid.
-  quorumBasisNumerator: 40000, // (basis points, will be divided by 1_000_000)
+  quorumBasisNumerator: 100000, // (basis points, will be divided by 1_000_000)
   // Linear Strategy | Percentage of total possible tokens which have voted that must vote YES in order to pass a proposal.
   votingBasisNumerator: 500000, // (basis points, will be divided by 1_000_000)
   // Linear Strategy | Number of total possible tokens that must be delegated to a user in order for them to create a proposal.
-  proposalRequiredWeightTokens: ethers.parseEther("0").toString(), // (delegated voting token balance)
+  proposalRequiredWeightTokens: ethers.parseEther("500000").toString(), // (delegated voting token balance)
   // Lock Release | Beneficiaries of the lock release schedule
   /**
    * Beneficiaries {@link beneficiaries}
