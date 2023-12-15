@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/governance/utils/Votes.sol";
 
 /**
  * @notice This contract creates token release schedules to linearly release those tokens over the defined duration.
  */
-contract LockRelease is Votes, Ownable {
+contract LockRelease is Votes, Ownable2Step {
     /** Represents a release schedule for a specific beneficiary. */
     struct Schedule {
         uint256 total; // total tokens that the beneficiary will receive over the duration
