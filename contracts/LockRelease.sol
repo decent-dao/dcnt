@@ -83,7 +83,7 @@ contract LockRelease is Votes, Ownable2Step {
         if (_beneficiaries.length != _amounts.length)
             revert InvalidArrayLengths();
 
-        for (uint16 i = 0; i < _beneficiaries.length; ) {
+        for (uint16 i; i < _beneficiaries.length; ) {
             uint256 amount = _amounts[i];
             if (amount == 0) revert InvalidAmount();
 

@@ -38,7 +38,7 @@ contract DCNTToken is ERC20, ERC20Permit, ERC20Votes, AccessControl {
         _mint(dest, amount);
     }
 
-    /// @notice holders can burn their own tokens
+    /// @notice token burn function, with restrictions
     /// @dev only accounts with `MINT_ROLE` (the DAO) are authorized to burn their tokens
     function burn(uint256 amount) external onlyRole(MINT_ROLE) {
         _burn(msg.sender, amount);
