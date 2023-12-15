@@ -1,3 +1,4 @@
+import { ethers } from "ethers";
 import { DecentDAOConfig } from "../DaoBuilder/types";
 import { beneficiaries } from "./beneficiaries";
 
@@ -43,7 +44,7 @@ export const decentDAOConfig: DecentDAOConfig = {
   // Linear Strategy | Percentage of total possible tokens which have voted that must vote YES in order to pass a proposal.
   votingBasisNumerator: 500000, // (basis points, will be divided by 1_000_000)
   // Linear Strategy | Number of total possible tokens that must be delegated to a user in order for them to create a proposal.
-  proposalRequiredWeightTokens: 0, // (delegated voting token balance)
+  proposalRequiredWeightTokens: ethers.parseEther("0").toString(), // (delegated voting token balance)
   // Lock Release | Beneficiaries of the lock release schedule
   /**
    * Beneficiaries {@link beneficiaries}

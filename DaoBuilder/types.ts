@@ -43,7 +43,7 @@ export interface DecentDAOConfig {
   timeLockPeriodBlocks: number;
   executionPeriodBlocks: number;
   votingBasisNumerator: number;
-  proposalRequiredWeightTokens: number;
+  proposalRequiredWeightTokens: string;
   beneficiaries: {
     type: BeneficiaryType;
     address: string;
