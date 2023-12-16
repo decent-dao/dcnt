@@ -80,8 +80,8 @@ export const deployDCNTAndLockRelease = async (
     string[],
     bigint[],
   ] = [
-      await dcntTokenContract.getAddress(),
       await predictedSafeAddress.getAddress(),
+      await dcntTokenContract.getAddress(),
       decentDAOConfig.unlockStartTimestamp,
       decentDAOConfig.unlockDurationSeconds,
       uniqueBeneficiaries.map((a) => a.address),
