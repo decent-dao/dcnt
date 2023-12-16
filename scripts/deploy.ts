@@ -131,11 +131,11 @@ async function createDAO() {
   console.log(`${urbanTechFoundation.address} transferred ${ethers.formatEther(treasuryAmount)} tokens to ${await predictedSafeContract.getAddress()} (UTF sending treasury to DAO)`);
 
   //
-  // Assign MINT ability of the DCNT Token to the Decent DAO
+  // Assign MINT_ROLE ability of the DCNT Token to the Decent DAO
   const transferTokenMintOwnership = await dcntTokenContract
     .connect(urbanTechFoundation)
     .grantRole(
-      ethers.keccak256(ethers.toUtf8Bytes("MINT_ROLE")),
+      await dcntTokenContract.MINT_ROLE(),
       await predictedSafeContract.getAddress()
     );
   await transferTokenMintOwnership.wait();
@@ -145,17 +145,17 @@ async function createDAO() {
   const transferTokenUpdateMintOwnership = await dcntTokenContract
     .connect(urbanTechFoundation)
     .grantRole(
-      ethers.keccak256(ethers.toUtf8Bytes("UPDATE_MINT_AUTHORIZATION_ROLE")),
+      await dcntTokenContract.UPDATE_MINT_AUTHORIZATION_ROLE(),
       await predictedSafeContract.getAddress()
     );
   await transferTokenUpdateMintOwnership.wait();
   console.log(`${urbanTechFoundation.address} granted UPDATE_MINT_AUTHORIZATION_ROLE to ${await predictedSafeContract.getAddress()}`);
 
-  // Revoke DEFAULT_ADMIN_ROLE of the DCNT Token from the deployer
+  // Renounce DEFAULT_ADMIN_ROLE of the DCNT Token from the deployer
   const renounceMintFromDeployer = await dcntTokenContract
     .connect(urbanTechFoundation)
     .renounceRole(
-      ethers.keccak256(ethers.toUtf8Bytes("DEFAULT_ADMIN_ROLE")),
+      await dcntTokenContract.DEFAULT_ADMIN_ROLE(),
       urbanTechFoundation.address
     );
   await renounceMintFromDeployer.wait();
