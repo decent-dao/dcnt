@@ -89,8 +89,7 @@ contract LockRelease is Votes, Ownable2Step {
 
             address beneficiary = _beneficiaries[i];
             if (beneficiary == address(0)) revert InvalidBeneficiary();
-            if (getTotal(beneficiary) != 0)
-                revert DuplicateBeneficiary();
+            if (getTotal(beneficiary) != 0) revert DuplicateBeneficiary();
 
             schedules[beneficiary] = Schedule(amount, 0);
 
@@ -120,9 +119,7 @@ contract LockRelease is Votes, Ownable2Step {
         if (releasable == 0) revert NothingToRelease();
 
         // Update released amount
-        schedules[msg.sender].released =
-            getReleased(msg.sender) +
-            releasable;
+        schedules[msg.sender].released += releasable;
 
         // Burn the released voting units
         _transferVotingUnits(msg.sender, address(0), releasable);
